@@ -8,14 +8,15 @@ import {
 
 /**
  * KONFIGURASI SISTEM UTAMA
+ * Versi 3.0 - Dioptimalkan untuk Cloudflare D1 SQL
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
 
 interface EmailMessage {
   id: string;
-  sender: string; // Mengikuti struktur kolom database D1 (sender alih-alih from)
-  recipient: string;
+  sender: string;    // Mengikuti kolom 'sender' di database D1
+  recipient: string; // Mengikuti kolom 'recipient' di database D1
   subject: string;
   body: string;
   date: string;
@@ -33,7 +34,7 @@ export default function App() {
   
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Verifikasi Integritas Node (Handshake)
+  // Verifikasi Integritas Jaringan (Handshake)
   const checkApiHealth = useCallback(async () => {
     try {
       const baseUrl = WORKER_URL.replace(/\/$/, ""); 
@@ -48,7 +49,7 @@ export default function App() {
       }
     } catch (err: any) {
       setConnectionStatus('offline');
-      setConnectionError("Handshake Gagal: Browser memblokir koneksi lintas domain (CORS).");
+      setConnectionError("Gagal Handshake: Protokol keamanan atau CORS memutus koneksi.");
     }
   }, []);
 
@@ -79,7 +80,7 @@ export default function App() {
 
     try {
       const baseUrl = WORKER_URL.replace(/\/$/, "");
-      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(email)}&sig=${Date.now()}`;
+      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(email)}&ts=${Date.now()}`;
       
       const response = await fetch(targetUrl, {
         signal: abortControllerRef.current.signal,
@@ -90,11 +91,8 @@ export default function App() {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        if (errorText.includes("limit exceeded")) {
-          throw new Error("Batas Harian Tercapai");
-        }
-        throw new Error(`HTTP ${response.status}`);
+        const errorMsg = await response.text();
+        throw new Error(errorMsg || `HTTP ${response.status}`);
       }
       
       const data = await response.json();
@@ -105,12 +103,10 @@ export default function App() {
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.error("Sync Error:", err.message);
+        console.error("Sinkronisasi Gagal:", err.message);
         if (manual) {
            setConnectionStatus('offline');
-           setConnectionError(err.message === "Batas Harian Tercapai" 
-             ? "Server Penuh: Batas harian Cloudflare KV tercapai. Harap perbarui Worker ke sistem D1." 
-             : `Gagal Sinkronisasi: ${err.message}`);
+           setConnectionError(`Gagal Sinkronisasi: ${err.message}`);
         }
       }
     } finally {
@@ -148,7 +144,7 @@ export default function App() {
   return (
     <div className="min-h-screen w-full bg-[#030303] text-zinc-300 font-sans grid place-items-center p-0 md:p-10 overflow-hidden selection:bg-indigo-500/30">
       
-      {/* Efek Cahaya Latar Ambient */}
+      {/* Efek Visual Latar Belakang */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-indigo-600/5 blur-[180px] rounded-full animate-pulse-slow"></div>
         <div className="absolute bottom-[-30%] right-[-20%] w-[80%] h-[80%] bg-purple-600/5 blur-[180px] rounded-full animate-pulse-slow" style={{ animationDelay: '4s' }}></div>
@@ -157,22 +153,22 @@ export default function App() {
       {/* Kontainer Utama Dashboard */}
       <div 
         style={{ placeSelf: 'center' }} 
-        className="relative w-full h-full md:h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[4rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-700"
+        className="relative w-full h-full md:h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[4.5rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-700"
       >
         
-        {/* PANEL 1: NAVIGASI (Otoritas Identitas) */}
-        <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/60">
+        {/* PANEL 1: NAVIGASI (Modul Identitas) */}
+        <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/50">
           <div className="p-12 pb-8">
             <div className="flex items-center gap-6 mb-16 group cursor-default">
               <div className="relative">
-                <div className="absolute inset-0 bg-indigo-500/40 blur-3xl opacity-0 group-hover:opacity-100 transition duration-1500"></div>
-                <div className="relative p-5 bg-gradient-to-br from-indigo-500 via-indigo-900 to-black rounded-[1.6rem] shadow-2xl transform group-hover:scale-110 transition-transform duration-700 border border-white/10">
+                <div className="absolute inset-0 bg-indigo-500/30 blur-3xl opacity-0 group-hover:opacity-100 transition duration-1500"></div>
+                <div className="relative p-5 bg-gradient-to-br from-indigo-500 via-indigo-900 to-black rounded-[1.6rem] shadow-2xl border border-white/10 group-hover:scale-105 transition-transform duration-700">
                   <ShieldCheck className="w-10 h-10 text-white" />
                 </div>
               </div>
               <div className="flex flex-col text-left">
                 <h1 className="text-3xl font-black text-white tracking-tighter italic leading-none uppercase">PrivateMail</h1>
-                <span className="text-[12px] text-zinc-700 font-bold tracking-[0.5em] uppercase mt-3 italic">Alpha Node Secured</span>
+                <span className="text-[12px] text-zinc-700 font-bold tracking-[0.5em] uppercase mt-3 italic">Node Alpha v3.0</span>
               </div>
             </div>
 
@@ -191,7 +187,7 @@ export default function App() {
                   <div className="flex flex-col gap-6">
                     <div className="bg-black/60 p-5 rounded-2xl border border-white/5 shadow-inner">
                        <span className="text-base font-mono text-indigo-300 truncate font-black tracking-tight block text-center italic leading-none">
-                        {loading ? 'Mengolah...' : email}
+                        {loading ? 'Mengolah Hash...' : email}
                       </span>
                     </div>
                     <button 
@@ -208,17 +204,17 @@ export default function App() {
               <button 
                 onClick={generateRandomEmail}
                 disabled={loading}
-                className="w-full py-6 bg-white hover:bg-zinc-200 text-black rounded-[2.5rem] font-black text-[13px] tracking-[0.2em] flex items-center justify-center gap-5 transition-all active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.15)] italic uppercase"
+                className="w-full py-6 bg-white hover:bg-zinc-200 text-black rounded-[2.5rem] font-black text-sm flex items-center justify-center gap-5 transition-all active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.15)] italic uppercase"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                Rotasi Identitas
+                Ganti Identitas
               </button>
             </div>
           </div>
 
           <nav className="flex-grow px-8 mt-16 space-y-4">
-            <div className="flex items-center justify-between px-10 py-6 bg-indigo-600/10 text-indigo-400 rounded-[2.2rem] font-black text-[13px] uppercase tracking-[0.3em] border border-indigo-500/30 cursor-pointer shadow-[0_20px_40px_rgba(99,102,241,0.25)]">
-              <div className="flex items-center gap-6 italic">
+            <div className="flex items-center justify-between px-10 py-6 bg-indigo-600/10 text-indigo-400 rounded-[2.2rem] font-black text-[13px] uppercase tracking-widest border border-indigo-600/20 cursor-pointer shadow-xl">
+              <div className="flex items-center gap-6 italic text-left">
                 <Inbox className="w-6 h-6" /> Kotak Masuk
               </div>
               <span className="bg-indigo-500 text-white px-4 py-1 rounded-2xl text-[12px] font-black shadow-inner">{messages.length}</span>
@@ -228,8 +224,8 @@ export default function App() {
           <div className="p-12 mt-auto">
             <div className="p-8 bg-black/50 rounded-[3rem] border border-white/5 flex flex-col items-center gap-4 shadow-inner text-center">
               <Activity className="w-7 h-7 text-indigo-500/40" />
-              <div className="overflow-hidden">
-                <p className="text-[12px] text-zinc-800 font-black uppercase tracking-[0.4em] mb-2">Sinkronisasi Node</p>
+              <div className="overflow-hidden w-full">
+                <p className="text-[12px] text-zinc-800 font-black uppercase tracking-[0.4em] mb-2">Integritas Node</p>
                 <p className="text-[13px] text-zinc-600 font-mono uppercase font-black tracking-widest italic leading-none truncate">
                    {connectionStatus === 'online' ? 'Optimal 100%' : 'Gagal Handshake'}
                 </p>
@@ -239,13 +235,13 @@ export default function App() {
         </aside>
 
         {/* PANEL 2: TENGAH (Daftar Transmisi) */}
-        <section className="w-full md:w-[450px] lg:w-[500px] flex flex-col border-r border-white/5 bg-black/30 backdrop-blur-md">
+        <section className="w-full md:w-[450px] lg:w-[520px] flex flex-col border-r border-white/5 bg-black/30 backdrop-blur-md">
           <div className="p-14 pb-12 border-b border-white/5">
             <div className="flex items-center justify-between mb-14">
               <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase drop-shadow-2xl">Transmisi</h2>
               <button 
                 onClick={() => fetchMessages(true)} 
-                className={`p-4 bg-[#0a0a0a] border border-white/10 hover:border-indigo-500/60 rounded-[1.2rem] transition-all shadow-3xl ${fetching ? 'text-indigo-500' : 'text-zinc-700 hover:text-white'}`}
+                className={`p-4 bg-[#0a0a0a] border border-white/10 hover:border-indigo-500/60 rounded-2xl transition-all shadow-3xl ${fetching ? 'text-indigo-500' : 'text-zinc-700 hover:text-white'}`}
               >
                 <RefreshCw className={`w-6 h-6 ${fetching ? 'animate-spin' : ''}`} />
               </button>
@@ -262,11 +258,11 @@ export default function App() {
             )}
 
             <div className="relative group">
-              <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-800 group-focus-within:text-indigo-500 transition-all duration-500" />
+              <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 text-zinc-800 group-focus-within:text-indigo-500 transition-all duration-500" />
               <input 
                 type="text" 
-                placeholder="Cari transmisi terenkripsi..." 
-                className="w-full bg-black/60 border border-white/5 rounded-[2rem] py-5 pl-18 pr-8 text-xs focus:outline-none focus:border-indigo-500/60 focus:ring-[15px] focus:ring-indigo-500/5 transition-all placeholder:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-inner"
+                placeholder="Pindai transmisi data..." 
+                className="w-full bg-black/60 border border-white/5 rounded-[2.2rem] py-5 pl-18 pr-8 text-xs focus:outline-none focus:border-indigo-500/60 focus:ring-[15px] focus:ring-indigo-500/5 transition-all placeholder:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-inner"
               />
             </div>
           </div>
@@ -277,7 +273,7 @@ export default function App() {
                 <div className="w-32 h-32 bg-[#0c0c0c] rounded-full flex items-center justify-center mb-12 border border-dashed border-zinc-800 shadow-[inset_0_0_50px_rgba(0,0,0,1)]">
                   <Mail className="w-14 h-14 text-zinc-800" />
                 </div>
-                <p className="text-[14px] font-black uppercase tracking-[0.6em] text-zinc-800 italic leading-none">Frekuensi Kosong</p>
+                <p className="text-[14px] font-black uppercase tracking-[0.6em] text-zinc-800 italic leading-none">Saluran Kosong</p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -289,7 +285,7 @@ export default function App() {
                   <div className="flex justify-between items-start mb-6 uppercase">
                     <div className="flex items-center gap-6 max-w-[80%] text-left">
                       <div className={`w-3.5 h-3.5 rounded-full ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,1)]' : 'bg-zinc-900'}`}></div>
-                      <p className={`text-[17px] font-black truncate tracking-tight ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-700'}`}>
+                      <p className={`text-[17px] font-black truncate tracking-tight uppercase ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-700'}`}>
                         {(msg.sender || "Unknown").split('<')[0].trim()}
                       </p>
                     </div>
@@ -320,7 +316,7 @@ export default function App() {
                     </div>
                   </div>
                   <div className="max-w-3xl text-left">
-                    <h3 className="text-5xl md:text-6xl font-black text-white leading-tight mb-8 tracking-tighter uppercase italic drop-shadow-2xl">
+                    <h3 className="text-5xl md:text-6xl font-black text-white leading-tight mb-8 tracking-tighter uppercase italic drop-shadow-2xl leading-none">
                       {selectedMessage.subject || '(Protokol: Tanpa Data)'}
                     </h3>
                     <div className="flex items-center gap-7">
@@ -385,7 +381,7 @@ export default function App() {
                Akses Terenkripsi
             </div>
             <div className="w-px h-12 bg-zinc-950"></div>
-            <div className="text-zinc-900">Node: {MY_DOMAIN}</div>
+            <div className="text-zinc-900 italic">Node: {MY_DOMAIN}</div>
           </div>
         </main>
       </div>
