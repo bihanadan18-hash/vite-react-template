@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Mail, RefreshCw, Trash2, Copy, Check, 
   ShieldCheck, Globe, Inbox, Send, Star, 
-  ChevronRight, Zap, Shield, Search, Lock
+  ChevronRight, Zap, Shield, Search, Lock, AlertTriangle
 } from 'lucide-react';
 
 /**
@@ -28,9 +28,14 @@ export default function App() {
   const [loading, setLoading] = useState<boolean>(false);
   const [fetching, setFetching] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  
+  // Ref untuk menghindari race condition pada fetch
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const generateRandomEmail = () => {
     setLoading(true);
+    setConnectionError(null);
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
     for (let i = 0; i < 8; i++) {
@@ -47,16 +52,31 @@ export default function App() {
   const fetchMessages = useCallback(async (showLoading = false) => {
     if (!email || email === '') return;
     if (showLoading) setFetching(true);
+    
+    // Batalkan fetch sebelumnya jika masih berjalan
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     try {
       const baseUrl = WORKER_URL.endsWith('/') ? WORKER_URL.slice(0, -1) : WORKER_URL;
-      const response = await fetch(`${baseUrl}/messages?email=${email}`);
-      if (!response.ok) throw new Error("Gagal terhubung ke API");
+      const response = await fetch(`${baseUrl}/messages?email=${email}`, {
+        signal: abortControllerRef.current.signal
+      });
+      
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      
       const data = await response.json();
       setMessages(data as EmailMessage[]);
-    } catch (err) {
-      console.error("Error fetching messages:", err);
+      setConnectionError(null); // Reset error jika berhasil
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error("Error fetching messages:", err);
+        setConnectionError("Gagal terhubung ke API. Pastikan Worker Cloudflare Anda aktif dan CORS diizinkan.");
+      }
     } finally {
-      setFetching(false);
+      if (showLoading) setFetching(false);
     }
   }, [email]);
 
@@ -67,12 +87,16 @@ export default function App() {
     } else {
       generateRandomEmail();
     }
+    
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
   }, []);
 
   useEffect(() => {
     if (!email) return;
     fetchMessages(false);
-    const interval = setInterval(() => fetchMessages(false), 8000);
+    const interval = setInterval(() => fetchMessages(false), 10000);
     return () => clearInterval(interval);
   }, [fetchMessages, email]);
 
@@ -102,9 +126,12 @@ export default function App() {
       </div>
 
       {/* Main Glass Application Container */}
-      <div className="relative w-full h-full md:h-[85vh] max-w-[1400px] flex flex-col md:flex-row bg-[#0d0d0d]/80 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[3rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden">
+      <div 
+        style={{ placeSelf: 'center' }}
+        className="relative w-full h-full md:h-[85vh] max-w-[1400px] flex flex-col md:flex-row bg-[#0d0d0d]/80 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[3rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden"
+      >
         
-        {/* PANEL 1: SIDEBAR (Navigation & Identity) */}
+        {/* PANEL 1: SIDEBAR */}
         <aside className="w-full md:w-72 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/40">
           <div className="p-8 pb-4">
             <div className="flex items-center gap-3 mb-10 group cursor-default">
@@ -126,8 +153,10 @@ export default function App() {
                 <div className="relative p-5 bg-black/60 border border-white/5 rounded-2xl backdrop-blur-md">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-                      <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Live Node</span>
+                      <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)] ${connectionError ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                      <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">
+                        {connectionError ? 'Offline' : 'Live Node'}
+                      </span>
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -153,7 +182,7 @@ export default function App() {
                 className="w-full py-4 bg-white hover:bg-zinc-200 text-black rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl hover:shadow-white/10"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                GENERATE NEW ID
+                BUAT ALAMAT BARU
               </button>
             </div>
           </div>
@@ -184,7 +213,7 @@ export default function App() {
           </div>
         </aside>
 
-        {/* PANEL 2: MIDDLE (Message List) */}
+        {/* PANEL 2: MIDDLE */}
         <section className="w-full md:w-[380px] lg:w-[420px] flex flex-col border-r border-white/5 bg-black/10">
           <div className="p-8 pb-6 border-b border-white/5">
             <div className="flex items-center justify-between mb-8">
@@ -196,6 +225,15 @@ export default function App() {
                 <RefreshCw className={`w-4 h-4 ${fetching ? 'animate-spin' : ''}`} />
               </button>
             </div>
+            {connectionError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3 text-red-400 animate-in fade-in duration-300">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="text-[10px] leading-relaxed">
+                  <p className="font-bold uppercase tracking-widest mb-1">Connection Refused</p>
+                  <p className="opacity-80">{connectionError}</p>
+                </div>
+              </div>
+            )}
             <div className="relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700 group-focus-within:text-indigo-500 transition-colors" />
               <input 
@@ -212,7 +250,9 @@ export default function App() {
                 <div className="w-20 h-20 bg-zinc-900/50 rounded-full flex items-center justify-center mb-6 border border-dashed border-zinc-800">
                   <Mail className="w-8 h-8 text-zinc-700" />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Listening for signals...</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">
+                  {connectionError ? 'Signal Interrupted' : 'Listening for signals...'}
+                </p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -247,11 +287,10 @@ export default function App() {
           </div>
         </section>
 
-        {/* PANEL 3: RIGHT (Reader View) */}
+        {/* PANEL 3: RIGHT */}
         <main className="flex-grow flex flex-col bg-black/20 overflow-hidden relative">
           {selectedMessage ? (
             <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-              {/* Header Reader */}
               <div className="p-8 md:p-10 border-b border-white/5 bg-zinc-950/30 flex items-center justify-between">
                 <div className="flex items-center gap-6">
                   <div className="relative">
@@ -282,7 +321,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Message Body */}
               <div className="flex-grow overflow-y-auto p-8 md:p-12 custom-scrollbar bg-black/40">
                 <div className="max-w-3xl mx-auto">
                   <div className="relative p-10 bg-zinc-900/20 rounded-[3rem] border border-white/5 min-h-[400px]">
@@ -293,7 +331,6 @@ export default function App() {
                       {selectedMessage.body}
                     </div>
                   </div>
-                  
                   <div className="mt-16 flex flex-col items-center opacity-40">
                     <div className="w-16 h-1 bg-zinc-800 rounded-full mb-10"></div>
                     <div className="flex items-center gap-4 px-8 py-3 bg-black border border-white/5 rounded-full text-[10px] text-zinc-500 font-black uppercase tracking-[0.3em]">
@@ -313,12 +350,13 @@ export default function App() {
                    <Inbox className="w-16 h-16 text-zinc-900 transition-all duration-1000 group-hover:text-indigo-400 group-hover:scale-110" />
                 </div>
               </div>
-              <h3 className="text-3xl font-black text-zinc-800 mb-4 tracking-tighter">LISTENING FOR TRANSMISSION...</h3>
+              <h3 className="text-3xl font-black text-zinc-800 mb-4 tracking-tighter uppercase leading-none">
+                {connectionError ? 'Node Error' : 'Awaiting Signals'}
+              </h3>
               <p className="text-[11px] max-w-sm text-zinc-700 leading-relaxed font-black uppercase tracking-[0.3em] italic">
-                Awaiting incoming secure signals on current node.
+                {connectionError ? 'The encrypted tunnel is unreachable. Verify your node status.' : 'Awaiting incoming secure signals on current node.'}
               </p>
               
-              {/* Animated Wave Elements */}
               <div className="mt-20 flex gap-2 items-end opacity-5">
                 {[...Array(30)].map((_, i) => (
                   <div key={i} className="h-8 w-1.5 bg-zinc-500 rounded-full animate-wave" style={{ height: `${Math.random() * 40 + 10}px`, animationDelay: `${i * 0.1}s` }}></div>
@@ -327,11 +365,10 @@ export default function App() {
             </div>
           )}
 
-          {/* Persistent Tech Footer */}
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-8 px-10 py-3 bg-black/60 backdrop-blur-md rounded-2xl border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-indigo-400 shadow-indigo-500/20">
+            <div className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-widest ${connectionError ? 'text-red-400' : 'text-indigo-400'}`}>
                <ShieldCheck className="w-4 h-4" />
-               SECURE PROTOCOL
+               {connectionError ? 'Insecure Link' : 'Secure Protocol'}
             </div>
             <div className="w-px h-4 bg-zinc-800"></div>
             <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-600">
@@ -366,6 +403,11 @@ export default function App() {
 
         body {
           background-color: #030303;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+          margin: 0;
         }
       `}</style>
     </div>
