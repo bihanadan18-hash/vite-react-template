@@ -8,15 +8,15 @@ import {
 
 /**
  * KONFIGURASI SISTEM UTAMA
- * Versi 3.0 - Dioptimalkan untuk Cloudflare D1 SQL
+ * Versi 3.4 - Optimasi Full Database D1
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
 
 interface EmailMessage {
   id: string;
-  sender: string;    // Mengikuti kolom 'sender' di database D1
-  recipient: string; // Mengikuti kolom 'recipient' di database D1
+  sender: string;    
+  recipient: string; 
   subject: string;
   body: string;
   date: string;
@@ -41,7 +41,8 @@ export default function App() {
       const response = await fetch(baseUrl, { 
         method: 'GET', 
         mode: 'cors',
-        cache: 'no-store'
+        cache: 'no-store',
+        credentials: 'omit'
       });
       if (response.ok) {
         setConnectionStatus('online');
@@ -90,12 +91,21 @@ export default function App() {
         headers: { 'Accept': 'application/json' }
       });
       
+      const rawText = await response.text();
+      
       if (!response.ok) {
-        const errorMsg = await response.text();
-        throw new Error(errorMsg || `HTTP ${response.status}`);
+        let errorInfo = `HTTP ${response.status}`;
+        try {
+          const errorData = JSON.parse(rawText);
+          errorInfo = errorData.error || errorInfo;
+        } catch (e) {
+          if (rawText.includes("limit exceeded")) errorInfo = "Batas Kuota Cloudflare Tercapai";
+          else if (rawText) errorInfo = rawText;
+        }
+        throw new Error(errorInfo);
       }
       
-      const data = await response.json();
+      const data = JSON.parse(rawText);
       if (Array.isArray(data)) {
         setMessages(data);
         setConnectionStatus('online');
@@ -104,10 +114,13 @@ export default function App() {
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error("Sinkronisasi Gagal:", err.message);
-        if (manual) {
-           setConnectionStatus('offline');
-           setConnectionError(`Gagal Sinkronisasi: ${err.message}`);
-        }
+        setConnectionStatus('offline');
+        // Deteksi cerdas untuk mengarahkan pengguna memperbaiki backend
+        setConnectionError(err.message === "KV not bound" 
+          ? "Kesalahan Backend: Kode Worker Anda masih mencari 'KV', silakan ganti ke kode 'D1 SQL' terbaru di Canvas." 
+          : err.message === "DB not bound" 
+          ? "Konfigurasi Salah: Database D1 belum di-bind dengan nama variabel 'DB' di dashboard."
+          : err.message);
       }
     } finally {
       if (manual) setFetching(false);
@@ -153,7 +166,7 @@ export default function App() {
       {/* Kontainer Utama Dashboard */}
       <div 
         style={{ placeSelf: 'center' }} 
-        className="relative w-full h-full md:h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[4.5rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-700"
+        className="relative w-full h-full md:h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[4rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-700"
       >
         
         {/* PANEL 1: NAVIGASI (Modul Identitas) */}
@@ -168,7 +181,7 @@ export default function App() {
               </div>
               <div className="flex flex-col text-left">
                 <h1 className="text-3xl font-black text-white tracking-tighter italic leading-none uppercase">PrivateMail</h1>
-                <span className="text-[12px] text-zinc-700 font-bold tracking-[0.5em] uppercase mt-3 italic">Node Alpha v3.0</span>
+                <span className="text-[12px] text-zinc-700 font-bold tracking-[0.5em] uppercase mt-3 italic">Node Alpha v3.4</span>
               </div>
             </div>
 
@@ -225,7 +238,7 @@ export default function App() {
             <div className="p-8 bg-black/50 rounded-[3rem] border border-white/5 flex flex-col items-center gap-4 shadow-inner text-center">
               <Activity className="w-7 h-7 text-indigo-500/40" />
               <div className="overflow-hidden w-full">
-                <p className="text-[12px] text-zinc-800 font-black uppercase tracking-[0.4em] mb-2">Integritas Node</p>
+                <p className="text-[12px] text-zinc-700 font-black uppercase tracking-[0.4em] mb-2">Integritas Node</p>
                 <p className="text-[13px] text-zinc-600 font-mono uppercase font-black tracking-widest italic leading-none truncate">
                    {connectionStatus === 'online' ? 'Optimal 100%' : 'Gagal Handshake'}
                 </p>
@@ -251,7 +264,7 @@ export default function App() {
               <div className="mb-10 p-8 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-start gap-6 text-red-500 animate-in zoom-in duration-1000 shadow-[0_30px_60px_rgba(239,68,68,0.25)] backdrop-blur-xl">
                 <AlertTriangle className="w-8 h-8 shrink-0 mt-1.5 shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
                 <div className="text-[13px] leading-[1.8] text-left">
-                  <p className="font-black uppercase tracking-[0.3em] mb-3 leading-none italic text-red-400 underline">Peringatan Keamanan</p>
+                  <p className="font-black uppercase tracking-[0.3em] mb-3 leading-none italic text-red-400 underline">Peringatan Sistem</p>
                   <p className="opacity-70 font-bold italic">{connectionError}</p>
                 </div>
               </div>
@@ -273,7 +286,7 @@ export default function App() {
                 <div className="w-32 h-32 bg-[#0c0c0c] rounded-full flex items-center justify-center mb-12 border border-dashed border-zinc-800 shadow-[inset_0_0_50px_rgba(0,0,0,1)]">
                   <Mail className="w-14 h-14 text-zinc-800" />
                 </div>
-                <p className="text-[14px] font-black uppercase tracking-[0.6em] text-zinc-800 italic leading-none">Saluran Kosong</p>
+                <p className="text-[14px] font-black uppercase tracking-[0.6em] text-zinc-800 italic leading-none">Frekuensi Kosong</p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -285,7 +298,7 @@ export default function App() {
                   <div className="flex justify-between items-start mb-6 uppercase">
                     <div className="flex items-center gap-6 max-w-[80%] text-left">
                       <div className={`w-3.5 h-3.5 rounded-full ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,1)]' : 'bg-zinc-900'}`}></div>
-                      <p className={`text-[17px] font-black truncate tracking-tight uppercase ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-700'}`}>
+                      <p className={`text-[17px] font-black truncate tracking-tighter uppercase ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-700'}`}>
                         {(msg.sender || "Unknown").split('<')[0].trim()}
                       </p>
                     </div>
@@ -303,24 +316,24 @@ export default function App() {
         </section>
 
         {/* PANEL 3: KANAN (Dekripsi Aliran Data) */}
-        <main className="flex-grow flex flex-col bg-black/40 overflow-hidden relative italic">
+        <main className="flex-grow flex flex-col bg-black/40 overflow-hidden relative italic text-left">
           {selectedMessage ? (
             <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-16 duration-[1500ms] text-left">
               {/* Header Reader */}
               <div className="p-16 md:p-20 border-b border-white/5 bg-zinc-950/80 flex items-center justify-between backdrop-blur-3xl shadow-2xl">
-                <div className="flex items-center gap-14 text-left">
+                <div className="flex items-center gap-14 text-left text-left">
                   <div className="relative">
                     <div className="absolute inset-0 bg-indigo-600 blur-[60px] opacity-40"></div>
-                    <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 via-indigo-950 to-black rounded-[3.5rem] flex items-center justify-center font-black text-white text-6xl shadow-[0_30px_80px_rgba(99,102,241,0.4)] border border-white/10 italic transform hover:scale-110 transition-transform duration-1000 cursor-default">
+                    <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 via-indigo-950 to-black rounded-[3.5rem] flex items-center justify-center font-black text-white text-6xl shadow-[0_30px_80px_rgba(99,102,241,0.4)] border border-white/10 italic transform hover:scale-110 transition-transform duration-1000 cursor-default text-left">
                       {(selectedMessage.sender || "?")[0].toUpperCase()}
                     </div>
                   </div>
                   <div className="max-w-3xl text-left">
-                    <h3 className="text-5xl md:text-6xl font-black text-white leading-tight mb-8 tracking-tighter uppercase italic drop-shadow-2xl leading-none">
+                    <h3 className="text-5xl md:text-6xl font-black text-white leading-tight mb-8 tracking-tighter uppercase italic drop-shadow-2xl">
                       {selectedMessage.subject || '(Protokol: Tanpa Data)'}
                     </h3>
                     <div className="flex items-center gap-7">
-                      <span className="text-[13px] text-zinc-800 font-black uppercase tracking-[0.6em] italic">Asal:</span>
+                      <span className="text-[13px] text-zinc-800 font-black uppercase tracking-[0.4em] italic">Asal:</span>
                       <span className="text-[15px] text-indigo-400 font-bold font-mono px-7 py-3 bg-indigo-500/5 rounded-[1.5rem] border border-indigo-500/10 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
                         {selectedMessage.sender}
                       </span>
@@ -358,7 +371,7 @@ export default function App() {
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-24 text-center animate-in fade-in duration-[3000ms]">
-              <div className="relative mb-24 group text-center">
+              <div className="relative mb-24 group text-center mx-auto">
                 <div className="absolute inset-0 bg-indigo-500/5 blur-[200px] rounded-full group-hover:bg-indigo-500/10 transition duration-[5000ms]"></div>
                 <div className="relative w-80 h-80 bg-[#060606] border border-white/5 rounded-[8rem] flex items-center justify-center shadow-[0_0_150px_rgba(0,0,0,1)] overflow-hidden transform group-hover:scale-[1.05] transition-transform duration-[3000ms] border-2 mx-auto">
                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/5 via-transparent to-transparent"></div>
@@ -369,7 +382,7 @@ export default function App() {
                  {connectionStatus === 'offline' ? 'BRIDGE DOWN' : 'SIAGA'}
               </h3>
               <p className="text-[16px] max-w-lg text-zinc-900 leading-relaxed font-black uppercase tracking-[0.8em] italic opacity-20 leading-[2.5] text-center mx-auto uppercase">
-                {connectionStatus === 'offline' ? 'Kegagalan Handshake: Node terputus atau API limit tercapai.' : 'Menunggu transmisi paket data terenkripsi masuk.'}
+                {connectionStatus === 'offline' ? 'Kegagalan Sinkronisasi: Silakan periksa dashboard Cloudflare Anda.' : 'Menunggu transmisi paket data terenkripsi masuk.'}
               </p>
             </div>
           )}
