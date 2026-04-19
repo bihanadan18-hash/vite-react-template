@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Mail, RefreshCw, Trash2, Eye, Copy, Check, Clock, ShieldCheck, Globe } from 'lucide-react';
 
 /**
- * KONFIGURASI SUDAH DISESUAIKAN:
- * 1. WORKER_URL: Mengarah ke backend Cloudflare Worker kamu.
- * 2. MY_DOMAIN: Menggunakan subdomain email kamu.
+ * KONFIGURASI FINAL:
+ * URL dan Domain sudah disesuaikan dengan milik Anda.
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
 
-// Definisi struktur data pesan untuk TypeScript
+// Definisi struktur data pesan agar TypeScript tidak error
 interface EmailMessage {
   id: string;
   from: string;
@@ -48,8 +47,12 @@ export default function App() {
     if (!email || email === '') return;
     if (showLoading) setFetching(true);
     try {
-      const response = await fetch(`${WORKER_URL}/messages?email=${email}`);
+      // Membersihkan URL dari trailing slash jika ada
+      const baseUrl = WORKER_URL.endsWith('/') ? WORKER_URL.slice(0, -1) : WORKER_URL;
+      const response = await fetch(`${baseUrl}/messages?email=${email}`);
+      
       if (!response.ok) throw new Error("Gagal terhubung ke API");
+      
       const data = await response.json();
       setMessages(data as EmailMessage[]);
     } catch (err) {
@@ -103,12 +106,12 @@ export default function App() {
           <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-3xl shadow-2xl shadow-blue-500/20 mb-4 animate-pulse-slow">
             <ShieldCheck className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-200 to-neutral-500 text-center">
-            PRIVATE MAIL
+          <h1 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-200 to-neutral-500 text-center uppercase">
+            Private Mail
           </h1>
           <div className="flex items-center gap-2 mt-2 text-neutral-500 text-sm">
             <Globe className="w-4 h-4 text-blue-500/50" />
-            <span>Alamat aktif di: <span className="text-blue-400 font-mono font-bold">{MY_DOMAIN}</span></span>
+            <span>Domain aktif: <span className="text-blue-400 font-mono font-bold">{MY_DOMAIN}</span></span>
           </div>
         </header>
 
@@ -118,7 +121,7 @@ export default function App() {
             <div className="relative flex-grow group">
               <input 
                 readOnly
-                value={loading ? "Menyiapkan..." : email}
+                value={loading ? "Generating..." : email}
                 className="w-full bg-neutral-800/50 border border-neutral-700 rounded-2xl py-5 px-6 font-mono text-xl text-blue-400 focus:outline-none focus:border-blue-500/50 transition-all"
               />
               <button 
@@ -157,7 +160,7 @@ export default function App() {
               </h2>
               <div className="flex items-center gap-2">
                  <span className="text-[10px] bg-neutral-800 px-2 py-1 rounded text-neutral-500 font-mono">
-                  {messages.length} msg
+                  {messages.length} pesan
                  </span>
                  {fetching && <RefreshCw className="w-3 h-3 animate-spin text-blue-500" />}
               </div>
@@ -170,7 +173,7 @@ export default function App() {
                     <Mail className="w-8 h-8 opacity-20" />
                   </div>
                   <p className="text-sm font-medium">Belum ada pesan</p>
-                  <p className="text-[10px] mt-1 opacity-50 uppercase tracking-widest">Menunggu email masuk...</p>
+                  <p className="text-[10px] mt-1 opacity-50 uppercase tracking-widest italic">Menunggu email masuk...</p>
                 </div>
               ) : (
                 messages.map(msg => (
@@ -223,7 +226,7 @@ export default function App() {
                 </div>
               </>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-neutral-600 p-10">
+              <div className="h-full flex flex-col items-center justify-center text-neutral-600 p-10 text-center">
                 <div className="relative mb-6">
                   <Eye className="w-20 h-20 opacity-5" />
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -243,8 +246,8 @@ export default function App() {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span>System Status: Operational</span>
           </div>
-          <p className="font-medium">
-            Secured by Cloudflare Workers &bull; Auto-Cleanup Enabled
+          <p className="font-medium italic">
+            Powered by Cloudflare Workers &bull; Auto-Cleanup Enabled
           </p>
         </footer>
       </div>
