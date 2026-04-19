@@ -199,7 +199,7 @@ export default function App() {
             <div className="h-20 p-6 border-b border-zinc-800 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-indigo-500/10">
-                  {selectedMessage.from[0].toUpperCase()}
+                  {selectedMessage.from ? selectedMessage.from[0].toUpperCase() : '?'}
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-lg leading-none mb-1">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
