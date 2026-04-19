@@ -3,12 +3,12 @@ import {
   Mail, RefreshCw, Trash2, 
   ShieldCheck, Inbox, 
   Search, AlertTriangle, Activity,
-  Copy, Check
+  Copy, Check, ChevronRight
 } from 'lucide-react';
 
 /**
- * KONFIGURASI SISTEM UTAMA
- * Versi 3.5 - Optimasi Handshake & Sinkronisasi D1
+ * KONFIGURASI SISTEM v3.8
+ * Tampilan Premium & Sinkronisasi SQL D1 Teruji
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
@@ -34,35 +34,26 @@ export default function App() {
   
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Verifikasi Integritas Jaringan (Handshake)
   const checkApiHealth = useCallback(async () => {
     try {
       const baseUrl = WORKER_URL.replace(/\/$/, ""); 
-      const response = await fetch(baseUrl, { 
-        method: 'GET', 
-        mode: 'cors',
-        cache: 'no-store',
-        credentials: 'omit'
-      });
+      const response = await fetch(baseUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
       if (response.ok) {
         setConnectionStatus('online');
         setConnectionError(null);
       }
     } catch (err: any) {
       setConnectionStatus('offline');
-      setConnectionError("Gagal Handshake: Protokol keamanan atau CORS memutus koneksi.");
+      setConnectionError("Gagal Handshake: Periksa konfigurasi CORS di Worker.");
     }
   }, []);
 
   const generateRandomEmail = () => {
     setLoading(true);
-    setConnectionError(null);
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    const newEmail = `${result}@${MY_DOMAIN}`.toLowerCase(); // Pastikan lowercase
+    for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+    const newEmail = `${result}@${MY_DOMAIN}`.toLowerCase();
     setEmail(newEmail);
     setMessages([]);
     setSelectedMessage(null);
@@ -71,25 +62,20 @@ export default function App() {
   };
 
   const fetchMessages = useCallback(async (manual = false) => {
-    if (!email || email === '') return;
-    if (manual || messages.length === 0) setFetching(true);
+    if (!email) return;
+    if (manual) setFetching(true);
     
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
     try {
       const baseUrl = WORKER_URL.replace(/\/$/, "");
-      // Gunakan pembersihan spasi pada email sebelum dikirim
-      const cleanEmail = email.trim().toLowerCase();
-      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(cleanEmail)}&ts=${Date.now()}`;
+      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(email.trim().toLowerCase())}&_=${Date.now()}`;
       
       const response = await fetch(targetUrl, {
         signal: abortControllerRef.current.signal,
         method: 'GET',
         mode: 'cors',
-        cache: 'no-store',
         headers: { 'Accept': 'application/json' }
       });
       
@@ -116,15 +102,15 @@ export default function App() {
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error("Sinkronisasi Gagal:", err.message);
-        setConnectionStatus('offline');
-        setConnectionError(err.message === "DB not bound" 
-          ? "Konfigurasi Salah: Database D1 belum di-bind dengan nama variabel 'DB' di dashboard."
-          : err.message);
+        if (manual) {
+          setConnectionStatus('offline');
+          setConnectionError(err.message === "DB not bound" ? "Kesalahan: Binding D1 belum dikonfigurasi." : err.message);
+        }
       }
     } finally {
-      setFetching(false);
+      if (manual) setFetching(false);
     }
-  }, [email, messages.length]);
+  }, [email]);
 
   useEffect(() => {
     checkApiHealth();
@@ -137,7 +123,7 @@ export default function App() {
   useEffect(() => {
     if (!email) return;
     fetchMessages();
-    const interval = setInterval(() => fetchMessages(), 10000); // Polling lebih cepat 10 detik
+    const interval = setInterval(() => fetchMessages(), 10000); 
     return () => clearInterval(interval);
   }, [fetchMessages, email]);
 
@@ -154,249 +140,196 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#030303] text-zinc-300 font-sans grid place-items-center p-0 md:p-10 overflow-hidden selection:bg-indigo-500/30">
+    <div className="min-h-screen w-full bg-[#030303] text-zinc-300 font-sans grid place-items-center p-4 md:p-10 overflow-hidden selection:bg-indigo-500/30">
       
-      {/* Efek Visual Latar Belakang */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-indigo-600/5 blur-[180px] rounded-full animate-pulse-slow"></div>
-        <div className="absolute bottom-[-30%] right-[-20%] w-[80%] h-[80%] bg-purple-600/5 blur-[180px] rounded-full animate-pulse-slow" style={{ animationDelay: '4s' }}></div>
+      {/* Background Visuals */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/5 blur-[150px] rounded-full animate-pulse-slow"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-zinc-600/5 blur-[150px] rounded-full animate-pulse-slow" style={{ animationDelay: '3s' }}></div>
       </div>
 
-      {/* Kontainer Utama Dashboard */}
-      <div 
-        style={{ placeSelf: 'center' }} 
-        className="relative w-full h-full md:h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[4rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-700"
-      >
+      {/* Main Framework Container */}
+      <div className="relative w-full h-[92vh] max-w-[1500px] flex flex-col md:flex-row bg-[#080808] border border-white/5 rounded-[3rem] md:rounded-[4.5rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-1000">
         
-        {/* PANEL 1: NAVIGASI (Modul Identitas) */}
-        <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/50">
-          <div className="p-12 pb-8 text-left">
-            <div className="flex items-center gap-6 mb-16 group cursor-default text-left">
-              <div className="relative">
-                <div className="absolute inset-0 bg-indigo-500/30 blur-3xl opacity-0 group-hover:opacity-100 transition duration-1500"></div>
-                <div className="relative p-5 bg-gradient-to-br from-indigo-500 via-indigo-900 to-black rounded-[1.6rem] shadow-2xl border border-white/10 group-hover:scale-105 transition-transform duration-700">
-                  <ShieldCheck className="w-10 h-10 text-white" />
-                </div>
-              </div>
-              <div className="flex flex-col text-left">
-                <h1 className="text-3xl font-black text-white tracking-tighter italic leading-none uppercase">PrivateMail</h1>
-                <span className="text-[12px] text-zinc-700 font-bold tracking-[0.5em] uppercase mt-3 italic">Node Alpha v3.5</span>
-              </div>
+        {/* SIDEBAR: IDENTITAS */}
+        <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/40 p-10">
+          <div className="flex items-center gap-5 mb-16">
+            <div className="p-4 bg-gradient-to-br from-indigo-500 to-black rounded-2xl border border-white/10 shadow-2xl shrink-0">
+              <ShieldCheck className="w-10 h-10 text-white" />
             </div>
-
-            <div className="space-y-10">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-blue-600/20 rounded-[3rem] blur-xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
-                <div className="relative p-8 bg-[#0b0b0b] border border-white/10 rounded-[3rem] shadow-2xl backdrop-blur-md">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,1)]' : 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,1)]'}`}></div>
-                      <span className="text-[12px] text-zinc-600 uppercase font-black tracking-[0.3em]">
-                        {connectionStatus === 'online' ? 'Protokol Aktif' : 'Protokol Mati'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-6">
-                    <div className="bg-black/60 p-5 rounded-2xl border border-white/5 shadow-inner">
-                       <span className="text-base font-mono text-indigo-300 truncate font-black tracking-tight block text-center italic leading-none">
-                        {loading ? 'Mengolah Hash...' : email}
-                      </span>
-                    </div>
-                    <button 
-                      onClick={copyToClipboard} 
-                      className="w-full py-5 bg-white/5 hover:bg-indigo-600/20 hover:text-indigo-300 text-zinc-500 rounded-[1.2rem] transition-all border border-white/5 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-[0.2em] active:scale-95"
-                    >
-                      {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5 text-indigo-500" />}
-                      {copied ? 'BERHASIL DISALIN' : 'SALIN IDENTITAS'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={generateRandomEmail}
-                disabled={loading}
-                className="w-full py-6 bg-white hover:bg-zinc-200 text-black rounded-[2.5rem] font-black text-sm flex items-center justify-center gap-5 transition-all active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.15)] italic uppercase"
-              >
-                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                Ganti Identitas
-              </button>
+            <div className="flex flex-col text-left">
+              <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none">PrivateMail</h1>
+              <span className="text-[11px] text-zinc-700 font-bold tracking-[0.4em] uppercase mt-2">Node Alpha v3.8</span>
             </div>
           </div>
 
-          <nav className="flex-grow px-8 mt-16 space-y-4">
-            <div className="flex items-center justify-between px-10 py-6 bg-indigo-600/10 text-indigo-400 rounded-[2.2rem] font-black text-[13px] uppercase tracking-widest border border-indigo-600/20 cursor-pointer shadow-xl">
-              <div className="flex items-center gap-6 italic text-left">
-                <Inbox className="w-6 h-6" /> Kotak Masuk
+          <div className="space-y-10 flex-grow">
+            <div className="p-8 bg-[#0c0c0c] border border-white/5 rounded-[3rem] shadow-inner text-center">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className={`w-2.5 h-2.5 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
+                <span className="text-[12px] text-zinc-600 font-black uppercase tracking-widest italic">
+                  {connectionStatus === 'online' ? 'Sistem Aktif' : 'Terputus'}
+                </span>
               </div>
-              <span className="bg-indigo-500 text-white px-4 py-1 rounded-2xl text-[12px] font-black shadow-inner">{messages.length}</span>
+              <div className="bg-black/60 p-5 rounded-2xl border border-white/5 mb-6 overflow-hidden shadow-inner">
+                 <p className="text-base font-mono text-indigo-300 truncate font-black tracking-tight">{loading ? '...' : email}</p>
+              </div>
+              <button onClick={copyToClipboard} className="w-full py-4 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-2xl transition-all border border-white/5 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest">
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-indigo-500" />}
+                {copied ? 'BERHASIL' : 'SALIN IDENTITAS'}
+              </button>
             </div>
-          </nav>
 
-          <div className="p-12 mt-auto">
-            <div className="p-8 bg-black/50 rounded-[3rem] border border-white/5 flex flex-col items-center gap-4 shadow-inner text-center">
-              <Activity className="w-7 h-7 text-indigo-500/40" />
-              <div className="overflow-hidden w-full text-center">
-                <p className="text-[12px] text-zinc-700 font-black uppercase tracking-widest mb-1">Integritas Node</p>
-                <p className="text-[13px] text-zinc-600 font-mono uppercase font-black tracking-widest italic leading-none truncate">
-                   {connectionStatus === 'online' ? 'Optimal 100%' : 'Gagal Handshake'}
+            <button onClick={generateRandomEmail} disabled={loading} className="w-full py-6 bg-white hover:bg-zinc-200 text-black rounded-[2.5rem] font-black text-sm flex items-center justify-center gap-4 transition-all shadow-2xl uppercase italic tracking-widest active:scale-95">
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              Ganti Identitas
+            </button>
+
+            <nav className="mt-12">
+              <div className="flex items-center justify-between px-10 py-6 bg-indigo-600/10 text-indigo-400 rounded-[2.5rem] font-black text-[13px] uppercase tracking-widest border border-indigo-600/20 shadow-xl">
+                <div className="flex items-center gap-6 italic"><Inbox className="w-6 h-6" /> Masuk</div>
+                <span className="bg-indigo-500 text-white px-4 py-1 rounded-2xl text-[12px]">{messages.length}</span>
+              </div>
+            </nav>
+          </div>
+
+          <div className="mt-auto pt-10">
+            <div className="p-8 bg-black/50 rounded-[3.2rem] border border-white/5 flex flex-col items-center gap-4 text-center shadow-inner">
+              <Activity className="w-8 h-8 text-zinc-800" />
+              <div className="overflow-hidden w-full">
+                <p className="text-[12px] text-zinc-800 font-black uppercase tracking-widest mb-1">Sinkronisasi Node</p>
+                <p className="text-[14px] text-zinc-500 font-mono font-bold italic truncate">
+                   {connectionStatus === 'online' ? 'Operasional 100%' : 'Gagal Handshake'}
                 </p>
               </div>
             </div>
           </div>
         </aside>
 
-        {/* PANEL 2: TENGAH (Daftar Transmisi) */}
-        <section className="w-full md:w-[450px] lg:w-[520px] flex flex-col border-r border-white/5 bg-black/30 backdrop-blur-md">
+        {/* LIST TRANSMISI */}
+        <section className="w-full md:w-[450px] lg:w-[520px] flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-md">
           <div className="p-14 pb-12 border-b border-white/5 text-left">
-            <div className="flex items-center justify-between mb-14">
-              <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase drop-shadow-2xl">Transmisi</h2>
-              <div className="flex items-center gap-3">
-                 {fetching && <span className="text-[10px] font-black text-indigo-500 animate-pulse uppercase tracking-widest italic">Memindai...</span>}
-                 <button 
-                  onClick={() => fetchMessages(true)} 
-                  className={`p-4 bg-[#0a0a0a] border border-white/10 hover:border-indigo-500/60 rounded-2xl transition-all shadow-3xl ${fetching ? 'text-indigo-500' : 'text-zinc-700 hover:text-white'}`}
-                >
-                  <RefreshCw className={`w-6 h-6 ${fetching ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
+            <div className="flex items-center justify-between mb-12">
+              <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase">Transmisi</h2>
+              <button onClick={() => fetchMessages(true)} className={`p-4 bg-zinc-900 border border-white/5 hover:border-indigo-500/40 rounded-2xl transition-all ${fetching ? 'text-indigo-500' : 'text-zinc-600 hover:text-white'}`}>
+                <RefreshCw className={`w-6 h-6 ${fetching ? 'animate-spin' : ''}`} />
+              </button>
             </div>
 
             {connectionError && (
-              <div className="mb-10 p-8 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-start gap-6 text-red-500 animate-in zoom-in duration-1000 shadow-[0_30px_60px_rgba(239,68,68,0.25)] backdrop-blur-xl">
-                <AlertTriangle className="w-8 h-8 shrink-0 mt-1.5 shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
-                <div className="text-[13px] leading-[1.8] text-left">
-                  <p className="font-black uppercase tracking-[0.3em] mb-3 leading-none italic text-red-400 underline">Peringatan Sistem</p>
-                  <p className="opacity-70 font-bold italic">{connectionError}</p>
-                </div>
+              <div className="mb-10 p-8 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-start gap-6 text-red-500 animate-in fade-in">
+                <AlertTriangle className="w-8 h-8 shrink-0 mt-1" />
+                <p className="text-[13px] font-bold italic leading-relaxed text-left">{connectionError}</p>
               </div>
             )}
 
             <div className="relative group text-left">
-              <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 text-zinc-800 group-focus-within:text-indigo-500 transition-all duration-500" />
-              <input 
-                type="text" 
-                placeholder="Pindai transmisi data..." 
-                className="w-full bg-black/60 border border-white/5 rounded-[2.2rem] py-5 pl-18 pr-8 text-xs focus:outline-none focus:border-indigo-500/60 focus:ring-[15px] focus:ring-indigo-500/5 transition-all placeholder:text-zinc-900 font-black uppercase tracking-[0.2em] shadow-inner"
-              />
+              <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 text-zinc-800" />
+              <input type="text" placeholder="Cari paket data..." className="w-full bg-black/60 border border-white/5 rounded-[2.2rem] py-5 pl-18 pr-8 text-sm focus:outline-none focus:border-indigo-500/40 font-bold uppercase tracking-widest shadow-inner transition-all" />
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-8 space-y-5 custom-scrollbar bg-zinc-950/40 text-left">
+          <div className="flex-grow overflow-y-auto p-8 space-y-5 custom-scrollbar bg-zinc-950/20 text-left">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center p-20 text-center opacity-30 italic">
-                <div className="w-32 h-32 bg-[#0c0c0c] rounded-full flex items-center justify-center mb-12 border border-dashed border-zinc-800 shadow-[inset_0_0_50px_rgba(0,0,0,1)]">
-                  <Mail className="w-14 h-14 text-zinc-800" />
-                </div>
-                <p className="text-[14px] font-black uppercase tracking-[0.6em] text-zinc-800 italic leading-none">Frekuensi Kosong</p>
-                <p className="text-[10px] mt-4 text-zinc-900 font-bold uppercase">Menunggu paket dari {email}</p>
+              <div className="h-full flex flex-col items-center justify-center p-20 opacity-20 italic">
+                <Mail className="w-16 h-16 text-zinc-800 mb-8" />
+                <p className="text-[14px] font-black uppercase tracking-[0.5em] text-center leading-none">Menunggu Sinyal...</p>
               </div>
             ) : (
               messages.map((msg) => (
-                <div 
-                  key={msg.id}
-                  onClick={() => setSelectedMessage(msg)}
-                  className={`relative p-8 rounded-[3.2rem] cursor-pointer transition-all duration-1000 border group shadow-3xl text-left ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/50 ring-2 ring-indigo-500/10' : 'hover:bg-white/5 border-transparent hover:border-white/5'}`}
-                >
-                  <div className="flex justify-between items-start mb-6 uppercase text-left">
-                    <div className="flex items-center gap-6 max-w-[80%] text-left">
-                      <div className={`w-3.5 h-3.5 rounded-full ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,1)]' : 'bg-zinc-900'}`}></div>
-                      <p className={`text-[17px] font-black truncate tracking-tighter uppercase ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-700'}`}>
+                <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`relative p-8 rounded-[3.5rem] cursor-pointer transition-all duration-700 border group ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/40 shadow-2xl' : 'hover:bg-white/5 border-transparent'}`}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-5 max-w-[75%]">
+                      <div className={`w-3 h-3 rounded-full shrink-0 ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.8)]' : 'bg-zinc-800'}`}></div>
+                      <p className={`text-base font-black truncate uppercase tracking-tight ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-600'}`}>
                         {(msg.sender || "Unknown").split('<')[0].trim()}
                       </p>
                     </div>
-                    <span className="text-[11px] text-zinc-800 font-black bg-black/80 px-4 py-2 rounded-2xl border border-white/5 uppercase tracking-tighter italic shadow-2xl">
+                    <span className="text-[11px] text-zinc-800 font-black italic">
                       {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <p className={`text-base truncate font-bold transition-colors duration-700 italic leading-none text-left ${selectedMessage?.id === msg.id ? 'text-zinc-300' : 'text-zinc-800'}`}>
-                    {msg.subject || '(Protokol: Tanpa Subjek)'}
+                  <p className={`text-sm truncate font-bold italic transition-colors ${selectedMessage?.id === msg.id ? 'text-zinc-400' : 'text-zinc-800 group-hover:text-zinc-600'}`}>
+                    {msg.subject || '(Tanpa Subjek)'}
                   </p>
+                  {selectedMessage?.id !== msg.id && (
+                    <div className="mt-5 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ChevronRight className="w-5 h-5 text-zinc-800" />
+                    </div>
+                  )}
                 </div>
               ))
             )}
           </div>
         </section>
 
-        {/* PANEL 3: KANAN (Dekripsi Aliran Data) */}
-        <main className="flex-grow flex flex-col bg-black/40 overflow-hidden relative italic text-left">
+        {/* DATA READER */}
+        <main className="flex-grow flex flex-col bg-black/40 overflow-hidden relative text-left italic">
           {selectedMessage ? (
-            <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-16 duration-[1500ms] text-left">
-              {/* Header Reader */}
-              <div className="p-16 md:p-20 border-b border-white/5 bg-zinc-950/80 flex items-center justify-between backdrop-blur-3xl shadow-2xl text-left">
-                <div className="flex items-center gap-14 text-left">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-indigo-600 blur-[60px] opacity-40"></div>
-                    <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 via-indigo-950 to-black rounded-[3.5rem] flex items-center justify-center font-black text-white text-6xl shadow-[0_30px_80px_rgba(99,102,241,0.4)] border border-white/10 italic transform hover:scale-110 transition-transform duration-1000 cursor-default">
-                      {(selectedMessage.sender || "?")[0].toUpperCase()}
-                    </div>
+            <div className="flex flex-col h-full animate-in fade-in duration-1000">
+              <div className="p-16 lg:p-24 border-b border-white/5 bg-zinc-950/60 flex items-center justify-between backdrop-blur-3xl shadow-2xl">
+                <div className="flex items-center gap-12 text-left">
+                  <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 to-black rounded-[3rem] flex items-center justify-center font-black text-white text-6xl shadow-2xl border border-white/10 shrink-0">
+                    {(selectedMessage.sender || "?")[0].toUpperCase()}
                   </div>
-                  <div className="max-w-3xl text-left">
-                    <h3 className="text-5xl md:text-6xl font-black text-white leading-tight mb-8 tracking-tighter uppercase italic drop-shadow-2xl">
-                      {selectedMessage.subject || '(Protokol: Tanpa Data)'}
+                  <div className="max-w-4xl">
+                    <h3 className="text-5xl lg:text-6xl font-black text-white mb-8 uppercase italic tracking-tighter leading-tight drop-shadow-2xl">
+                      {selectedMessage.subject || '(Tanpa Subjek)'}
                     </h3>
-                    <div className="flex items-center gap-7 text-left">
-                      <span className="text-[13px] text-zinc-800 font-black uppercase tracking-[0.4em] italic">Asal:</span>
-                      <span className="text-[15px] text-indigo-400 font-bold font-mono px-7 py-3 bg-indigo-500/5 rounded-[1.5rem] border border-indigo-500/10 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center gap-8 flex-wrap">
+                      <span className="text-[13px] text-zinc-800 font-black uppercase tracking-widest">Origin Node:</span>
+                      <span className="text-[16px] text-indigo-400 font-mono font-bold px-7 py-3 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 shadow-inner">
                         {selectedMessage.sender}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-10">
-                  <button 
-                    onClick={() => setSelectedMessage(null)}
-                    className="p-10 bg-[#080808] hover:bg-red-500/5 border border-white/5 hover:border-red-500/50 rounded-[4rem] text-zinc-900 hover:text-red-500 transition-all duration-1500 shadow-3xl group border-2"
-                  >
-                    <Trash2 className="w-10 h-10 transform group-hover:rotate-[20deg] group-hover:scale-125 transition-all duration-700" />
-                  </button>
-                </div>
+                <button onClick={() => setSelectedMessage(null)} className="p-12 bg-zinc-900/50 hover:bg-red-500/5 border border-white/5 hover:border-red-500/40 rounded-full text-zinc-800 hover:text-red-500 transition-all active:scale-95 shadow-3xl">
+                  <Trash2 className="w-12 h-12" />
+                </button>
               </div>
 
-              {/* Data Stream Body */}
-              <div className="flex-grow overflow-y-auto p-16 md:p-24 custom-scrollbar bg-black/90 shadow-[inset_0_0_150px_rgba(0,0,0,1)] text-left">
-                <div className="max-w-5xl mx-auto text-left">
-                  <div className="relative p-20 bg-[#080808] rounded-[6rem] border border-white/5 min-h-[600px] shadow-[inset_0_0_120px_rgba(0,0,0,0.8)] border-2 text-left">
-                    <div className="text-zinc-500 leading-[2.4] text-2xl whitespace-pre-wrap font-medium selection:bg-indigo-500/60 tracking-tight italic drop-shadow-sm text-left">
+              <div className="flex-grow overflow-y-auto p-16 lg:p-32 custom-scrollbar bg-black/80 shadow-[inset_0_0_150px_rgba(0,0,0,1)]">
+                <div className="max-w-5xl mx-auto">
+                  <div className="relative p-20 bg-[#0a0a0a] rounded-[6rem] border-2 border-white/5 shadow-2xl min-h-[550px] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]">
+                    <div className="text-zinc-500 leading-[2.6] text-3xl font-medium tracking-tight">
                       {selectedMessage.body}
                     </div>
                   </div>
                   
                   <div className="mt-32 flex flex-col items-center opacity-10">
-                    <div className="w-60 h-2 bg-zinc-950 rounded-full mb-16"></div>
-                    <div className="flex items-center gap-8 px-20 py-8 bg-black border border-white/5 rounded-full text-[14px] text-zinc-800 font-black uppercase tracking-[0.8em] italic border-2">
-                       <div className="w-4 h-4 bg-indigo-900 rounded-full animate-pulse shadow-[0_0_30px_rgba(67,56,202,1)]"></div>
-                       Siklus Penghancuran Otomatis Teraktifkan
+                    <div className="w-64 h-2 bg-zinc-950 rounded-full mb-16"></div>
+                    <div className="flex items-center gap-8 px-24 py-8 bg-black border border-white/5 rounded-full text-[15px] text-zinc-800 font-black uppercase tracking-[0.6em]">
+                       <div className="w-5 h-5 bg-indigo-900 rounded-full animate-pulse shadow-[0_0_30px_rgba(67,56,202,1)]"></div>
+                       Penghancuran Otomatis Teraktifkan
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center p-24 text-center animate-in fade-in duration-[3000ms]">
-              <div className="relative mb-24 group text-center mx-auto">
-                <div className="absolute inset-0 bg-indigo-500/5 blur-[200px] rounded-full group-hover:bg-indigo-500/10 transition duration-[5000ms]"></div>
-                <div className="relative w-80 h-80 bg-[#060606] border border-white/5 rounded-[8rem] flex items-center justify-center shadow-[0_0_150px_rgba(0,0,0,1)] overflow-hidden transform group-hover:scale-[1.05] transition-transform duration-[3000ms] border-2 mx-auto">
+            <div className="h-full flex flex-col items-center justify-center p-24 text-center animate-in fade-in duration-2000">
+              <div className="relative mb-24 group mx-auto">
+                <div className="absolute inset-0 bg-indigo-500/5 blur-[200px] rounded-full group-hover:bg-indigo-500/10 transition-all duration-3000"></div>
+                <div className="relative w-80 h-80 bg-[#080808] border-2 border-white/5 rounded-[8rem] flex items-center justify-center shadow-2xl overflow-hidden transform group-hover:scale-[1.05] transition-transform duration-1500">
                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/5 via-transparent to-transparent"></div>
-                   <Inbox className="w-32 h-32 text-zinc-950 transition-all duration-[3000ms] group-hover:text-indigo-950 group-hover:drop-shadow-[0_0_50px_rgba(99,102,241,0.4)] opacity-30" />
+                   <Inbox className="w-32 h-32 text-zinc-950 opacity-40 group-hover:text-indigo-400 group-hover:opacity-100 transition-all duration-2000" />
                 </div>
               </div>
-              <h3 className="text-8xl font-black text-[#111] mb-10 tracking-[0.5em] uppercase leading-none italic opacity-95 drop-shadow-2xl text-center">
-                 {connectionStatus === 'offline' ? 'BRIDGE DOWN' : 'SIAGA'}
-              </h3>
-              <p className="text-[16px] max-w-lg text-zinc-900 leading-relaxed font-black uppercase tracking-[0.8em] italic opacity-20 leading-[2.5] text-center mx-auto uppercase">
-                {connectionStatus === 'offline' ? 'Kegagalan Sinkronisasi: Silakan periksa dashboard Cloudflare Anda.' : 'Menunggu transmisi paket data terenkripsi masuk.'}
+              <h3 className="text-8xl font-black text-[#131313] mb-10 tracking-[0.5em] uppercase leading-none italic opacity-95 text-center">SIAGA</h3>
+              <p className="text-[16px] max-w-lg text-zinc-900 leading-relaxed font-black uppercase tracking-[0.6em] italic opacity-20 mx-auto text-center">
+                {connectionStatus === 'offline' ? 'Bridge Down: Sinkronisasi Gagal.' : 'Menunggu Paket Data Terenkripsi Masuk.'}
               </p>
             </div>
           )}
 
-          {/* Persistent System Footer (HUD) */}
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-24 px-28 py-8 bg-black/95 backdrop-blur-3xl rounded-[5rem] border border-white/10 shadow-[0_80px_150px_rgba(0,0,0,1)] border-2 italic font-black uppercase text-[14px] tracking-[0.6em]">
-            <div className={`${connectionStatus === 'offline' ? 'text-red-900' : 'text-indigo-900'} shadow-indigo-500/20 flex items-center gap-6`}>
+          {/* SYSTEM HUD FOOTER */}
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-24 px-32 py-8 bg-black/95 backdrop-blur-3xl rounded-[5rem] border border-white/10 shadow-[0_80px_150px_rgba(0,0,0,1)] italic font-black uppercase text-[14px] tracking-[0.6em]">
+            <div className={`flex items-center gap-8 ${connectionStatus === 'offline' ? 'text-red-950 shadow-red-500/10' : 'text-indigo-950'}`}>
                <ShieldCheck className="w-8 h-8" />
                Akses Terenkripsi
             </div>
-            <div className="w-px h-12 bg-zinc-950"></div>
+            <div className="w-px h-12 bg-zinc-950 opacity-50"></div>
             <div className="text-zinc-900">Node: {MY_DOMAIN}</div>
           </div>
         </main>
@@ -404,26 +337,12 @@ export default function App() {
 
       <style>{`
         body { background-color: #030303 !important; display: grid; place-items: center; min-height: 100vh; margin: 0; cursor: crosshair; }
-        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.01); border-radius: 100px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.02); }
-        
-        @keyframes pulse-slow {
-          0%, 100% { transform: scale(1); opacity: 0.05; }
-          50% { transform: scale(1.1); opacity: 0.1; }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 15s ease-in-out infinite;
-        }
-
-        @keyframes wave {
-          0%, 100% { transform: scaleY(1); opacity: 0.1; }
-          50% { transform: scaleY(3); opacity: 1; }
-        }
-        .animate-wave {
-          animation: wave 4s ease-in-out infinite;
-        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.08); }
+        @keyframes pulse-slow { 0%, 100% { transform: scale(1); opacity: 0.05; } 50% { transform: scale(1.1); opacity: 0.1; } }
+        .animate-pulse-slow { animation: pulse-slow 15s ease-in-out infinite; }
       `}</style>
     </div>
   );
