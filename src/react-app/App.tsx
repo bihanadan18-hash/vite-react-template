@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 
 /**
- * FRONTEND PRIVATE MAIL v4.3 PRO
- * Domain: mail.rekenbutler.com (Subdomain Dedicated)
+ * FRONTEND PRIVATE MAIL v4.5 PRO
+ * SOLUSI: Menggunakan Root Domain untuk Catch-all (Tanpa mengganggu Blog)
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
-const MY_DOMAIN = "mail.rekenbutler.com"; // DIKEMBALIKAN KE SUBDOMAIN SESUAI PERMINTAAN
+const MY_DOMAIN = "rekenbutler.com"; // WAJIB ROOT AGAR CATCH-ALL AKTIF
 
 interface EmailMessage {
   id: string;
@@ -45,7 +45,7 @@ export default function App() {
       }
     } catch (err: any) {
       setConnectionStatus('offline');
-      setConnectionError("Gagal Handshake: Node tidak merespons protokol keamanan.");
+      setConnectionError("Handshake Gagal: Node tidak merespons protokol keamanan.");
     }
   }, []);
 
@@ -140,37 +140,31 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#030303] text-zinc-300 font-sans grid place-items-center p-4 md:p-10 overflow-hidden selection:bg-indigo-500/30">
+    <div className="min-h-screen w-full bg-[#030303] text-zinc-300 font-sans grid place-items-center p-4 md:p-10 overflow-hidden selection:bg-indigo-500/30 text-left">
       
-      {/* Visual Ambient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-25%] left-[-10%] w-[70%] h-[70%] bg-indigo-600/5 blur-[160px] rounded-full animate-pulse-slow"></div>
         <div className="absolute bottom-[-25%] right-[-10%] w-[70%] h-[70%] bg-purple-600/5 blur-[160px] rounded-full animate-pulse-slow" style={{ animationDelay: '4s' }}></div>
       </div>
 
-      {/* Kontainer Dashboard */}
-      <div 
-        style={{ placeSelf: 'center' }} 
-        className="relative w-full h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-[3rem] md:rounded-[4rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-1000"
-      >
+      <div style={{ placeSelf: 'center' }} className="relative w-full h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-[3rem] md:rounded-[4rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-1000 text-left">
         
-        {/* PANEL 1: SIDEBAR */}
-        <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/40 p-10">
-          <div className="flex items-center gap-5 mb-16">
-            <div className="p-4 bg-gradient-to-br from-indigo-500 to-black rounded-2xl border border-white/10 shadow-2xl shrink-0">
+        <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/40 p-10 text-left">
+          <div className="flex items-center gap-5 mb-16 text-left">
+            <div className="p-4 bg-gradient-to-br from-indigo-500 to-black rounded-2xl border border-white/10 shadow-2xl shrink-0 text-left">
               <ShieldCheck className="w-10 h-10 text-white" />
             </div>
             <div className="flex flex-col text-left">
-              <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none">PrivateMail</h1>
-              <span className="text-[11px] text-zinc-700 font-bold tracking-[0.4em] uppercase mt-2 text-left italic leading-none">v4.3 Subdomain Node</span>
+              <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none text-left">PrivateMail</h1>
+              <span className="text-[11px] text-zinc-700 font-bold tracking-[0.4em] uppercase mt-2 text-left italic leading-none">v4.5 Root Catch-all</span>
             </div>
           </div>
 
-          <div className="space-y-10 flex-grow">
+          <div className="space-y-10 flex-grow text-left">
             <div className="p-8 bg-[#0c0c0c] border border-white/5 rounded-[3rem] shadow-inner text-center">
-              <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="flex items-center justify-center gap-3 mb-6 text-center">
                 <div className={`w-2.5 h-2.5 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
-                <span className="text-[12px] text-zinc-600 font-black uppercase tracking-widest italic leading-none">
+                <span className="text-[12px] text-zinc-600 font-black uppercase tracking-widest italic leading-none text-center">
                   {connectionStatus === 'online' ? 'Sistem Aktif' : 'Terputus'}
                 </span>
               </div>
@@ -189,19 +183,19 @@ export default function App() {
             </button>
 
             <nav className="mt-12 text-left">
-              <div className="flex items-center justify-between px-10 py-6 bg-indigo-600/10 text-indigo-400 rounded-[2.5rem] font-black text-[13px] uppercase tracking-widest border border-indigo-600/20 shadow-xl">
+              <div className="flex items-center justify-between px-10 py-6 bg-indigo-600/10 text-indigo-400 rounded-[2.5rem] font-black text-[13px] uppercase tracking-widest border border-indigo-600/20 shadow-xl text-left">
                 <div className="flex items-center gap-6 italic text-left"><Inbox className="w-6 h-6" /> Masuk</div>
                 <span className="bg-indigo-500 text-white px-4 py-1 rounded-2xl text-[12px]">{messages.length}</span>
               </div>
             </nav>
           </div>
 
-          <div className="mt-auto pt-10">
+          <div className="mt-auto pt-10 text-left">
             <button onClick={() => setShowTerminal(!showTerminal)} className="w-full p-8 bg-black/50 rounded-[3.2rem] border border-white/5 flex flex-col items-center gap-4 shadow-inner text-center transition-all hover:bg-white/5">
               {showTerminal ? <Terminal className="w-8 h-8 text-indigo-500" /> : <Activity className="w-8 h-8 text-zinc-800" />}
               <div className="overflow-hidden w-full text-center">
                 <p className="text-[12px] text-zinc-700 font-black uppercase tracking-widest mb-1 text-center">Diagnostik Node</p>
-                <p className="text-[14px] text-zinc-400 font-mono font-bold italic truncate text-center leading-none">
+                <p className="text-[14px] text-zinc-400 font-mono font-bold italic truncate text-center leading-none text-center">
                    {connectionStatus === 'online' ? 'Optimal 100%' : 'Gagal Handshake'}
                 </p>
               </div>
@@ -209,10 +203,9 @@ export default function App() {
           </div>
         </aside>
 
-        {/* PANEL 2: TRANSMISI */}
-        <section className="w-full md:w-[450px] lg:w-[500px] flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-md">
+        <section className="w-full md:w-[450px] lg:w-[500px] flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-md text-left">
           <div className="p-14 pb-12 border-b border-white/5 text-left">
-            <div className="flex items-center justify-between mb-12">
+            <div className="flex items-center justify-between mb-12 text-left">
               <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase text-left">Transmisi</h2>
               <button onClick={() => fetchMessages(true)} className={`p-4 bg-zinc-900 border border-white/5 hover:border-indigo-500/40 rounded-2xl transition-all ${fetching ? 'text-indigo-500' : 'text-zinc-600 hover:text-white'}`}>
                 <RefreshCw className={`w-6 h-6 ${fetching ? 'animate-spin' : ''}`} />
@@ -220,7 +213,7 @@ export default function App() {
             </div>
 
             {connectionError && (
-              <div className="mb-10 p-8 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-start gap-6 text-red-500 animate-in fade-in">
+              <div className="mb-10 p-8 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-start gap-6 text-red-500 animate-in fade-in text-left">
                 <AlertTriangle className="w-8 h-8 shrink-0 mt-1" />
                 <p className="text-[13px] font-bold italic leading-relaxed text-left">{connectionError}</p>
               </div>
@@ -228,7 +221,7 @@ export default function App() {
 
             <div className="relative group text-left">
               <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 text-zinc-800 group-focus-within:text-indigo-500 transition-all duration-500" />
-              <input type="text" placeholder="Cari paket data..." className="w-full bg-black/60 border border-white/5 rounded-[2.2rem] py-5 pl-18 pr-8 text-sm focus:outline-none focus:border-indigo-500/40 font-bold uppercase tracking-widest shadow-inner transition-all" />
+              <input type="text" placeholder="Cari paket data..." className="w-full bg-black/60 border border-white/5 rounded-[2.2rem] py-5 pl-18 pr-8 text-sm focus:outline-none focus:border-indigo-500/40 font-bold uppercase tracking-widest shadow-inner transition-all text-left" />
             </div>
           </div>
 
@@ -236,11 +229,11 @@ export default function App() {
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center p-20 opacity-20 italic text-center">
                 <Mail className="w-16 h-16 text-zinc-800 mb-8 mx-auto" />
-                <p className="text-[14px] font-black uppercase tracking-[0.5em] leading-none">Menunggu Sinyal...</p>
+                <p className="text-[14px] font-black uppercase tracking-[0.5em] leading-none text-center">Menunggu Sinyal...</p>
               </div>
             ) : (
               messages.map((msg) => (
-                <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`relative p-8 rounded-[3.5rem] cursor-pointer transition-all duration-700 border group ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/40 shadow-2xl' : 'hover:bg-white/5 border-transparent'}`}>
+                <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`relative p-8 rounded-[3.5rem] cursor-pointer transition-all duration-700 border group ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/40 shadow-2xl' : 'hover:bg-white/5 border-transparent'} text-left`}>
                   <div className="flex justify-between items-start mb-4 text-left">
                     <div className="flex items-center gap-5 max-w-[75%] text-left">
                       <div className={`w-3 h-3 rounded-full shrink-0 ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.8)]' : 'bg-zinc-800'}`}></div>
@@ -261,22 +254,21 @@ export default function App() {
           </div>
         </section>
 
-        {/* PANEL 3: READER / DIAGNOSTIK */}
         <main className="flex-grow flex flex-col bg-black/40 overflow-hidden relative text-left italic">
           {showTerminal ? (
             <div className="flex flex-col h-full bg-[#050505] p-20 animate-in slide-in-from-right-12 duration-1000 text-left">
                <div className="flex items-center gap-8 mb-16 border-b border-indigo-500/20 pb-10 text-left">
                  <Terminal className="w-12 h-12 text-indigo-500" />
-                 <h3 className="text-5xl font-black text-white uppercase italic text-left">Diagnostik Final</h3>
+                 <h3 className="text-5xl font-black text-white uppercase italic text-left">Pusat Diagnostik</h3>
                </div>
                <div className="flex-grow space-y-8 overflow-y-auto custom-scrollbar font-mono text-sm text-zinc-500 leading-relaxed text-left">
                  <div className="p-8 bg-zinc-950 rounded-3xl border border-white/5 text-left">
-                   <p className="text-indigo-400 font-black mb-4 uppercase tracking-widest text-left">[1] KONFIGURASI SUBDOMAIN:</p>
-                   <p className="text-left">Identitas sekarang menggunakan <b>@{MY_DOMAIN}</b>. Pastikan Cloudflare Email Routing diatur untuk menerima email dari subdomain ini.</p>
+                   <p className="text-indigo-400 font-black mb-4 uppercase tracking-widest text-left">[1] SOLUSI TANPA SUBDOMAIN:</p>
+                   <p className="text-left italic">Karena Cloudflare tidak mendukung Catch-all di subdomain, kita harus menggunakan <b>@{MY_DOMAIN}</b>.</p>
                  </div>
                  <div className="p-8 bg-zinc-950 rounded-3xl border border-white/5 text-left">
-                   <p className="text-indigo-400 font-black mb-4 uppercase tracking-widest text-left">[2] REKAMAN MX:</p>
-                   <p className="text-left">Email ke subdomain memerlukan rekaman MX khusus jika tidak dikelola oleh apex catch-all. Kirim email percobaan sekarang!</p>
+                   <p className="text-indigo-400 font-black mb-4 uppercase tracking-widest text-left">[2] VERIFIKASI ROUTING:</p>
+                   <p className="text-left italic">Pastikan di menu <b>Email Routing</b>, "Catch-all" mengarah ke Worker dan berstatus <b>Active</b> untuk domain utama.</p>
                  </div>
                </div>
                <button onClick={() => setShowTerminal(false)} className="mt-10 px-12 py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all">Selesai</button>
@@ -285,7 +277,7 @@ export default function App() {
             <div className="flex flex-col h-full animate-in fade-in duration-1000 text-left">
               <div className="p-16 lg:p-24 border-b border-white/5 bg-zinc-950/60 flex items-center justify-between backdrop-blur-3xl shadow-2xl text-left">
                 <div className="flex items-center gap-12 text-left">
-                  <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 to-black rounded-[3rem] flex items-center justify-center font-black text-white text-6xl shadow-2xl border border-white/10 shrink-0 text-left">
+                  <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 to-black rounded-[3rem] flex items-center justify-center font-black text-white text-6xl shadow-2xl border border-white/10 shrink-0">
                     {(selectedMessage.sender || "?")[0].toUpperCase()}
                   </div>
                   <div className="max-w-4xl text-left">
@@ -293,7 +285,7 @@ export default function App() {
                       {selectedMessage.subject || '(Tanpa Subjek)'}
                     </h3>
                     <div className="flex items-center gap-8 flex-wrap text-left">
-                      <span className="text-[13px] text-zinc-700 font-black uppercase tracking-widest text-left">Asal Transmisi:</span>
+                      <span className="text-[13px] text-zinc-700 font-black uppercase tracking-widest text-left">Asal:</span>
                       <span className="text-[16px] text-indigo-400 font-mono font-bold px-7 py-3 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 shadow-inner">
                         {selectedMessage.sender}
                       </span>
@@ -315,8 +307,8 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center p-24 text-center animate-in fade-in duration-2000">
-              <div className="relative mb-24 group mx-auto">
+            <div className="h-full flex flex-col items-center justify-center p-24 text-center animate-in fade-in duration-2000 text-center">
+              <div className="relative mb-24 group mx-auto text-center">
                 <div className="absolute inset-0 bg-indigo-500/5 blur-[200px] rounded-full group-hover:bg-indigo-500/10 transition-all duration-3000"></div>
                 <div className="relative w-80 h-80 bg-[#080808] border-2 border-white/5 rounded-[8rem] flex items-center justify-center shadow-2xl overflow-hidden transform group-hover:scale-[1.05] transition-transform duration-1500 mx-auto">
                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/5 via-transparent to-transparent"></div>
@@ -330,13 +322,12 @@ export default function App() {
             </div>
           )}
 
-          {/* SYSTEM HUD FOOTER */}
           <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-24 px-32 py-8 bg-black/95 backdrop-blur-3xl rounded-[5rem] border-2 border-white/10 shadow-[0_80px_150px_rgba(0,0,0,1)] italic font-black uppercase text-[14px] tracking-[0.6em]">
             <div className={`flex items-center gap-8 ${connectionStatus === 'offline' ? 'text-red-950 shadow-red-500/10' : 'text-indigo-950'}`}>
                <ShieldCheck className="w-8 h-8" /> Akses Terenkripsi
             </div>
             <div className="w-px h-12 bg-zinc-950 opacity-50"></div>
-            <div className="text-zinc-900">Node: {MY_DOMAIN}</div>
+            <div className="text-zinc-900 italic">Node: {MY_DOMAIN}</div>
           </div>
         </main>
       </div>
