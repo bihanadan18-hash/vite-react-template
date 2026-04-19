@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  Mail, RefreshCw, Trash2, Eye, Copy, Check, 
+  Mail, RefreshCw, Trash2, Copy, Check, 
   ShieldCheck, Globe, Inbox, Send, Star, 
-  AlertCircle, ChevronRight, Zap, Shield, Search
+  ChevronRight, Zap, Shield, Search
 } from 'lucide-react';
 
 /**
@@ -257,7 +257,7 @@ export default function App() {
                   <div className="relative">
                     <div className="absolute inset-0 bg-indigo-500/30 blur-lg rounded-2xl"></div>
                     <div className="relative w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-800 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-2xl border border-white/10">
-                      {selectedMessage.from[0].toUpperCase()}
+                      {selectedMessage.from ? selectedMessage.from[0].toUpperCase() : '?'}
                     </div>
                   </div>
                   <div>
