@@ -3,11 +3,13 @@ import {
   Mail, RefreshCw, Trash2, 
   ShieldCheck, Inbox, 
   Search, AlertTriangle, Activity,
-  Copy, Check, ChevronRight, Bug, Terminal
+  Copy, Check, ChevronRight, Terminal
 } from 'lucide-react';
 
 /**
- * KONFIGURASI SISTEM v3.9 PRO (DEBUG EDITION)
+ * FRONTEND PRIVATE MAIL v4.1.1 PRO
+ * Tampilan Ultra-Premium & Sinkronisasi Real-time
+ * Fix: JSX Character Escaping
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
@@ -30,31 +32,21 @@ export default function App() {
   const [copied, setCopied] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  
-  // State untuk Diagnostik
-  const [showDebug, setShowDebug] = useState(false);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [showTerminal, setShowTerminal] = useState(false);
   
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const addLog = (msg: string) => {
-    setDebugLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 10));
-  };
-
   const checkApiHealth = useCallback(async () => {
-    addLog("Memulai Handshake...");
     try {
       const baseUrl = WORKER_URL.replace(/\/$/, ""); 
       const response = await fetch(baseUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
       if (response.ok) {
         setConnectionStatus('online');
         setConnectionError(null);
-        addLog("Handshake Sukses (API Online)");
       }
     } catch (err: any) {
       setConnectionStatus('offline');
-      setConnectionError("Gagal Handshake: Periksa konfigurasi CORS di Worker.");
-      addLog("Handshake Gagal (CORS/Jaringan)");
+      setConnectionError("Gagal Handshake: Sistem keamanan memblokir akses ke node.");
     }
   }, []);
 
@@ -69,7 +61,6 @@ export default function App() {
     setSelectedMessage(null);
     localStorage.setItem('saved_temp_email', newEmail);
     setLoading(false);
-    addLog(`Identitas Baru: ${newEmail}`);
   };
 
   const fetchMessages = useCallback(async (manual = false) => {
@@ -82,9 +73,7 @@ export default function App() {
     try {
       const baseUrl = WORKER_URL.replace(/\/$/, "");
       const cleanEmail = email.trim().toLowerCase();
-      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(cleanEmail)}&_=${Date.now()}`;
-      
-      addLog(`Memindai Node: ${cleanEmail}...`);
+      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(cleanEmail)}&_v=${Date.now()}`;
       
       const response = await fetch(targetUrl, {
         signal: abortControllerRef.current.signal,
@@ -96,8 +85,14 @@ export default function App() {
       const rawText = await response.text();
       
       if (!response.ok) {
-        addLog(`Kesalahan Server: ${response.status}`);
-        throw new Error(rawText || `HTTP ${response.status}`);
+        let info = `HTTP ${response.status}`;
+        try {
+          const data = JSON.parse(rawText);
+          info = data.error || info;
+        } catch (e) {
+          if (rawText.includes("limit")) info = "Kuota Harian Habis";
+        }
+        throw new Error(info);
       }
       
       const data = JSON.parse(rawText);
@@ -105,14 +100,13 @@ export default function App() {
         setMessages(data);
         setConnectionStatus('online');
         setConnectionError(null);
-        if (data.length > 0) addLog(`${data.length} Paket Diterima!`);
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        addLog(`Gagal Sinkronisasi: ${err.message}`);
+        console.error("Sinkronisasi Gagal:", err.message);
         if (manual) {
-          setConnectionStatus('offline');
-          setConnectionError(err.message === "DB not bound" ? "Kesalahan: Binding D1 belum dikonfigurasi." : err.message);
+           setConnectionStatus('offline');
+           setConnectionError(err.message === "DB not bound" ? "Kesalahan: Binding D1 belum dikonfigurasi." : err.message);
         }
       }
     } finally {
@@ -152,14 +146,14 @@ export default function App() {
       
       {/* Visual Ambient */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/5 blur-[150px] rounded-full animate-pulse-slow"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-zinc-600/5 blur-[150px] rounded-full animate-pulse-slow" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute top-[-25%] left-[-10%] w-[70%] h-[70%] bg-indigo-600/5 blur-[160px] rounded-full animate-pulse-slow"></div>
+        <div className="absolute bottom-[-25%] right-[-10%] w-[70%] h-[70%] bg-zinc-600/5 blur-[160px] rounded-full animate-pulse-slow" style={{ animationDelay: '3s' }}></div>
       </div>
 
       {/* Kontainer Dashboard */}
       <div 
         style={{ placeSelf: 'center' }} 
-        className="relative w-full h-[92vh] max-w-[1500px] flex flex-col md:flex-row bg-[#080808] border border-white/5 rounded-[3rem] md:rounded-[4.5rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-1000"
+        className="relative w-full h-[90vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-[3rem] md:rounded-[4rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-1000"
       >
         
         {/* PANEL 1: SIDEBAR */}
@@ -170,20 +164,20 @@ export default function App() {
             </div>
             <div className="flex flex-col text-left">
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none">PrivateMail</h1>
-              <span className="text-[11px] text-zinc-700 font-bold tracking-[0.4em] uppercase mt-2 italic text-left">v3.9 Pro Debug</span>
+              <span className="text-[11px] text-zinc-700 font-bold tracking-[0.4em] uppercase mt-2 text-left italic">v4.1.1 Final Node</span>
             </div>
           </div>
 
           <div className="space-y-10 flex-grow">
             <div className="p-8 bg-[#0c0c0c] border border-white/5 rounded-[3rem] shadow-inner text-center">
-              <div className="flex items-center justify-center gap-3 mb-6 text-center">
+              <div className="flex items-center justify-center gap-3 mb-6">
                 <div className={`w-2.5 h-2.5 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
-                <span className="text-[12px] text-zinc-600 font-black uppercase tracking-widest italic">
+                <span className="text-[12px] text-zinc-600 font-black uppercase tracking-widest italic leading-none">
                   {connectionStatus === 'online' ? 'Sistem Aktif' : 'Terputus'}
                 </span>
               </div>
-              <div className="bg-black/60 p-5 rounded-2xl border border-white/5 mb-6 overflow-hidden shadow-inner">
-                 <p className="text-base font-mono text-indigo-300 truncate font-black tracking-tight">{loading ? '...' : email}</p>
+              <div className="bg-black/60 p-5 rounded-2xl border border-white/5 mb-6 overflow-hidden shadow-inner text-center">
+                 <p className="text-base font-mono text-indigo-300 truncate font-black tracking-tight text-center">{loading ? '...' : email}</p>
               </div>
               <button onClick={copyToClipboard} className="w-full py-4 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-2xl transition-all border border-white/5 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest">
                 {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-indigo-500" />}
@@ -206,25 +200,25 @@ export default function App() {
 
           <div className="mt-auto pt-10">
             <button 
-              onClick={() => setShowDebug(!showDebug)}
-              className={`w-full p-6 bg-black/50 rounded-[3.2rem] border border-white/5 flex flex-col items-center gap-4 shadow-inner text-center transition-all ${showDebug ? 'border-indigo-500/50' : ''}`}
+              onClick={() => setShowTerminal(!showTerminal)}
+              className="w-full p-8 bg-black/50 rounded-[3.2rem] border border-white/5 flex flex-col items-center gap-4 shadow-inner text-center transition-all hover:bg-white/5"
             >
-              {showDebug ? <Bug className="w-8 h-8 text-indigo-500" /> : <Activity className="w-8 h-8 text-zinc-800" />}
+              {showTerminal ? <Terminal className="w-8 h-8 text-indigo-500" /> : <Activity className="w-8 h-8 text-zinc-800" />}
               <div className="overflow-hidden w-full text-center">
-                <p className="text-[12px] text-zinc-700 font-black uppercase tracking-widest mb-1 text-center">Diagnostik Sistem</p>
-                <p className="text-[14px] text-zinc-500 font-mono font-bold italic truncate text-center">
-                   {showDebug ? 'Log Terbuka' : (connectionStatus === 'online' ? 'Optimal 100%' : 'Gagal Handshake')}
+                <p className="text-[12px] text-zinc-700 font-black uppercase tracking-widest mb-1 text-center">Integritas Node</p>
+                <p className="text-[14px] text-zinc-400 font-mono font-bold italic truncate text-center leading-none">
+                   {connectionStatus === 'online' ? 'Optimal 100%' : 'Gagal Handshake'}
                 </p>
               </div>
             </button>
           </div>
         </aside>
 
-        {/* LIST TRANSMISI */}
-        <section className="w-full md:w-[450px] lg:w-[520px] flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-md">
+        {/* PANEL 2: LIST TRANSMISI */}
+        <section className="w-full md:w-[450px] lg:w-[500px] flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-md">
           <div className="p-14 pb-12 border-b border-white/5 text-left">
-            <div className="flex items-center justify-between mb-12">
-              <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase">Transmisi</h2>
+            <div className="flex items-center justify-between mb-12 text-left">
+              <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase text-left">Transmisi</h2>
               <button onClick={() => fetchMessages(true)} className={`p-4 bg-zinc-900 border border-white/5 hover:border-indigo-500/40 rounded-2xl transition-all ${fetching ? 'text-indigo-500' : 'text-zinc-600 hover:text-white'}`}>
                 <RefreshCw className={`w-6 h-6 ${fetching ? 'animate-spin' : ''}`} />
               </button>
@@ -252,7 +246,7 @@ export default function App() {
             ) : (
               messages.map((msg) => (
                 <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`relative p-8 rounded-[3.5rem] cursor-pointer transition-all duration-700 border group ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/40 shadow-2xl' : 'hover:bg-white/5 border-transparent'}`}>
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex justify-between items-start mb-4 text-left">
                     <div className="flex items-center gap-5 max-w-[75%] text-left">
                       <div className={`w-3 h-3 rounded-full shrink-0 ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.8)]' : 'bg-zinc-800'}`}></div>
                       <p className={`text-base font-black truncate uppercase tracking-tight text-left ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-600'}`}>
@@ -272,34 +266,29 @@ export default function App() {
           </div>
         </section>
 
-        {/* READER PANEL */}
+        {/* PANEL 3: READER / TERMINAL */}
         <main className="flex-grow flex flex-col bg-black/40 overflow-hidden relative text-left italic">
-          {showDebug ? (
-            <div className="flex flex-col h-full bg-[#050505] p-16 animate-in slide-in-from-right-10 duration-700">
-               <div className="flex items-center gap-6 mb-12 border-b border-indigo-500/20 pb-8 text-left">
-                 <Terminal className="w-10 h-10 text-indigo-500" />
-                 <h3 className="text-4xl font-black text-white uppercase italic text-left">Pusat Diagnostik</h3>
+          {showTerminal ? (
+            <div className="flex flex-col h-full bg-[#050505] p-20 animate-in slide-in-from-right-12 duration-1000 text-left">
+               <div className="flex items-center gap-8 mb-16 border-b border-indigo-500/20 pb-10 text-left">
+                 <Terminal className="w-12 h-12 text-indigo-500" />
+                 <h3 className="text-5xl font-black text-white uppercase italic text-left">Pusat Diagnostik</h3>
                </div>
-               <div className="flex-grow font-mono text-sm space-y-4 overflow-y-auto custom-scrollbar text-left">
-                 {debugLogs.length === 0 ? (
-                   <p className="text-zinc-800 italic">Belum ada aktivitas teknis tercatat...</p>
-                 ) : (
-                   debugLogs.map((log, i) => (
-                     <div key={i} className={`p-4 border-l-2 border-indigo-500/20 bg-indigo-500/5 rounded-r-lg text-left ${log.includes("Gagal") ? 'border-red-500/50 bg-red-500/5 text-red-400' : 'text-zinc-400'}`}>
-                       {log}
-                     </div>
-                   ))
-                 )}
+               <div className="flex-grow space-y-8 overflow-y-auto custom-scrollbar font-mono text-sm text-zinc-500 leading-relaxed text-left">
+                 <div className="p-8 bg-zinc-950 rounded-3xl border border-white/5 text-left">
+                   <p className="text-indigo-400 font-black mb-4 uppercase tracking-widest text-left">[1] Verifikasi Email Routing:</p>
+                   <p className="text-left">Pastikan di Dashboard Cloudflare {" > "} Email Routing {" > "} Catch-all, <b>Action</b> diarahkan ke Worker ini.</p>
+                 </div>
+                 <div className="p-8 bg-zinc-950 rounded-3xl border border-white/5 text-left">
+                   <p className="text-indigo-400 font-black mb-4 uppercase tracking-widest text-left">[2] Tes Ingest Worker:</p>
+                   <p className="text-left">Buka tab <b>Logs</b> di Worker Anda, lalu kirim email tes. Jika log tidak muncul, berarti Cloudflare belum mengirim email ke Worker.</p>
+                 </div>
+                 <div className="p-8 bg-zinc-950 rounded-3xl border border-white/5 text-left">
+                   <p className="text-indigo-400 font-black mb-4 uppercase tracking-widest text-left">[3] Status Database:</p>
+                   <p className="text-left">Karena tes <b>INSERT</b> manual tadi berhasil, berarti Frontend sudah benar membaca D1.</p>
+                 </div>
                </div>
-               <div className="mt-12 p-8 bg-zinc-950 rounded-3xl border border-white/5 space-y-4 text-left">
-                 <p className="text-xs text-indigo-500 font-black uppercase tracking-widest text-left">Protokol Verifikasi:</p>
-                 <ol className="text-[13px] text-zinc-600 space-y-2 list-decimal ml-5 text-left">
-                   <li>Pastikan Email Routing "Catch-all" sudah aktif di Cloudflare.</li>
-                   <li>Pastikan "Action" diarahkan ke Worker "{WORKER_URL.split('.')[0].split('//')[1]}".</li>
-                   <li>Pastikan Database D1 sudah memiliki tabel 'messages'.</li>
-                   <li>Kirim email percobaan baru untuk menguji aliran data.</li>
-                 </ol>
-               </div>
+               <button onClick={() => setShowTerminal(false)} className="mt-10 px-12 py-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all">Selesai</button>
             </div>
           ) : selectedMessage ? (
             <div className="flex flex-col h-full animate-in fade-in duration-1000 text-left">
@@ -320,15 +309,15 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setSelectedMessage(null)} className="p-12 bg-zinc-900/50 hover:bg-red-500/5 border border-white/5 hover:border-red-500/40 rounded-full text-zinc-800 hover:text-red-500 transition-all shadow-3xl">
+                <button onClick={() => setSelectedMessage(null)} className="p-12 bg-zinc-900/50 hover:bg-red-500/5 border border-white/5 hover:border-red-500/40 rounded-full text-zinc-800 hover:text-red-500 transition-all active:scale-95 shadow-3xl">
                   <Trash2 className="w-12 h-12" />
                 </button>
               </div>
 
               <div className="flex-grow overflow-y-auto p-16 lg:p-32 custom-scrollbar bg-black/80 shadow-[inset_0_0_150px_rgba(0,0,0,1)] text-left">
                 <div className="max-w-5xl mx-auto text-left">
-                  <div className="relative p-20 bg-[#0a0a0a] rounded-[6rem] border-2 border-white/5 shadow-2xl min-h-[550px] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] text-left text-left">
-                    <div className="text-zinc-500 leading-[2.6] text-2xl font-medium tracking-tight text-left">
+                  <div className="relative p-20 bg-[#0a0a0a] rounded-[6rem] border-2 border-white/5 shadow-2xl min-h-[550px] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] text-left">
+                    <div className="text-zinc-500 leading-[2.6] text-2xl whitespace-pre-wrap font-medium tracking-tight text-left">
                       {selectedMessage.body}
                     </div>
                   </div>
@@ -344,15 +333,15 @@ export default function App() {
                    <Inbox className="w-32 h-32 text-zinc-950 opacity-40 group-hover:text-indigo-400 group-hover:opacity-100 transition-all duration-2000" />
                 </div>
               </div>
-              <h3 className="text-8xl font-black text-[#131313] mb-10 tracking-[0.5em] uppercase leading-none italic opacity-95">SIAGA</h3>
-              <p className="text-[16px] max-w-lg text-zinc-900 leading-relaxed font-black uppercase tracking-[0.6em] italic opacity-20 mx-auto">
-                {connectionStatus === 'offline' ? 'Bridge Down: Sinkronisasi Gagal.' : 'Menunggu Paket Data Terenkripsi Masuk.'}
+              <h3 className="text-8xl font-black text-[#131313] mb-10 tracking-[0.5em] uppercase leading-none italic opacity-95 text-center">SIAGA</h3>
+              <p className="text-[16px] max-w-lg text-zinc-900 leading-relaxed font-black uppercase tracking-[0.6em] italic opacity-20 mx-auto text-center leading-[2.5]">
+                {connectionStatus === 'offline' ? 'Bridge Down: Sinkronisasi Gagal.' : 'Menunggu Paket Data Terenkripsi Masuk Melalui Protokol Secured.'}
               </p>
             </div>
           )}
 
           {/* SYSTEM HUD FOOTER */}
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-24 px-32 py-8 bg-black/95 backdrop-blur-3xl rounded-[5rem] border border-white/10 shadow-[0_80px_150px_rgba(0,0,0,1)] italic font-black uppercase text-[14px] tracking-[0.6em]">
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-24 px-32 py-8 bg-black/95 backdrop-blur-3xl rounded-[5rem] border border-2 border-white/10 shadow-[0_80px_150px_rgba(0,0,0,1)] italic font-black uppercase text-[14px] tracking-[0.6em]">
             <div className={`flex items-center gap-8 ${connectionStatus === 'offline' ? 'text-red-950 shadow-red-500/10' : 'text-indigo-950'}`}>
                <ShieldCheck className="w-8 h-8" />
                Akses Terenkripsi
