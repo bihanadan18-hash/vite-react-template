@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Mail, RefreshCw, Trash2, Copy, Check, 
-  ShieldCheck, Globe, Inbox, Send, Star, 
+  ShieldCheck, Inbox, Send, Star, 
   ChevronRight, Zap, Shield, Search, Lock, AlertTriangle, Activity
 } from 'lucide-react';
 
@@ -37,7 +37,6 @@ export default function App() {
   const checkApiHealth = useCallback(async () => {
     try {
       const baseUrl = WORKER_URL.endsWith('/') ? WORKER_URL.slice(0, -1) : WORKER_URL;
-      console.log(`Checking health at: ${baseUrl}`);
       
       const response = await fetch(baseUrl, { 
         method: 'GET', 
@@ -54,7 +53,6 @@ export default function App() {
     } catch (err: any) {
       console.error("Health Check Failed:", err);
       setConnectionStatus('offline');
-      // Pesan edukatif untuk membantu user memperbaiki backend
       setConnectionError("API aktif, tetapi koneksi ditolak oleh kebijakan keamanan (CORS).");
     }
   }, []);
@@ -100,11 +98,9 @@ export default function App() {
       
       const data = await response.json();
       
-      // Pastikan data adalah array untuk menghindari error .map
       if (Array.isArray(data)) {
         setMessages(data);
       } else {
-        console.warn("API did not return an array:", data);
         setMessages([]);
       }
       
@@ -301,7 +297,7 @@ export default function App() {
                 <div 
                   key={msg.id}
                   onClick={() => setSelectedMessage(msg)}
-                  className={`relative p-6 rounded-[2rem] cursor-pointer transition-all duration-700 border group shadow-lg ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/30 ring-1 ring-indigo-500/20' : 'hover:bg-white/5 border-transparent hover:border-white/5'}`}
+                  className={`relative p-6 rounded-[2rem] cursor-pointer transition-all duration-700 border group shadow-lg ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'hover:bg-white/5 border-transparent'}`}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-4 max-w-[75%]">
