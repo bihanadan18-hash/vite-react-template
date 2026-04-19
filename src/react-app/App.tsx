@@ -8,7 +8,7 @@ import {
 
 /**
  * KONFIGURASI SISTEM UTAMA
- * Versi 3.4 - Optimasi Full Database D1
+ * Versi 3.5 - Optimasi Handshake & Sinkronisasi D1
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
@@ -62,7 +62,7 @@ export default function App() {
     for (let i = 0; i < 8; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    const newEmail = `${result}@${MY_DOMAIN}`;
+    const newEmail = `${result}@${MY_DOMAIN}`.toLowerCase(); // Pastikan lowercase
     setEmail(newEmail);
     setMessages([]);
     setSelectedMessage(null);
@@ -72,7 +72,7 @@ export default function App() {
 
   const fetchMessages = useCallback(async (manual = false) => {
     if (!email || email === '') return;
-    if (manual) setFetching(true);
+    if (manual || messages.length === 0) setFetching(true);
     
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -81,7 +81,9 @@ export default function App() {
 
     try {
       const baseUrl = WORKER_URL.replace(/\/$/, "");
-      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(email)}&ts=${Date.now()}`;
+      // Gunakan pembersihan spasi pada email sebelum dikirim
+      const cleanEmail = email.trim().toLowerCase();
+      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(cleanEmail)}&ts=${Date.now()}`;
       
       const response = await fetch(targetUrl, {
         signal: abortControllerRef.current.signal,
@@ -115,22 +117,19 @@ export default function App() {
       if (err.name !== 'AbortError') {
         console.error("Sinkronisasi Gagal:", err.message);
         setConnectionStatus('offline');
-        // Deteksi cerdas untuk mengarahkan pengguna memperbaiki backend
-        setConnectionError(err.message === "KV not bound" 
-          ? "Kesalahan Backend: Kode Worker Anda masih mencari 'KV', silakan ganti ke kode 'D1 SQL' terbaru di Canvas." 
-          : err.message === "DB not bound" 
+        setConnectionError(err.message === "DB not bound" 
           ? "Konfigurasi Salah: Database D1 belum di-bind dengan nama variabel 'DB' di dashboard."
           : err.message);
       }
     } finally {
-      if (manual) setFetching(false);
+      setFetching(false);
     }
-  }, [email]);
+  }, [email, messages.length]);
 
   useEffect(() => {
     checkApiHealth();
     const saved = localStorage.getItem('saved_temp_email');
-    if (saved && saved.endsWith(MY_DOMAIN)) setEmail(saved);
+    if (saved && saved.endsWith(MY_DOMAIN)) setEmail(saved.toLowerCase());
     else generateRandomEmail();
     return () => { if (abortControllerRef.current) abortControllerRef.current.abort(); };
   }, [checkApiHealth]);
@@ -138,7 +137,7 @@ export default function App() {
   useEffect(() => {
     if (!email) return;
     fetchMessages();
-    const interval = setInterval(() => fetchMessages(), 15000); 
+    const interval = setInterval(() => fetchMessages(), 10000); // Polling lebih cepat 10 detik
     return () => clearInterval(interval);
   }, [fetchMessages, email]);
 
@@ -171,8 +170,8 @@ export default function App() {
         
         {/* PANEL 1: NAVIGASI (Modul Identitas) */}
         <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/50">
-          <div className="p-12 pb-8">
-            <div className="flex items-center gap-6 mb-16 group cursor-default">
+          <div className="p-12 pb-8 text-left">
+            <div className="flex items-center gap-6 mb-16 group cursor-default text-left">
               <div className="relative">
                 <div className="absolute inset-0 bg-indigo-500/30 blur-3xl opacity-0 group-hover:opacity-100 transition duration-1500"></div>
                 <div className="relative p-5 bg-gradient-to-br from-indigo-500 via-indigo-900 to-black rounded-[1.6rem] shadow-2xl border border-white/10 group-hover:scale-105 transition-transform duration-700">
@@ -181,7 +180,7 @@ export default function App() {
               </div>
               <div className="flex flex-col text-left">
                 <h1 className="text-3xl font-black text-white tracking-tighter italic leading-none uppercase">PrivateMail</h1>
-                <span className="text-[12px] text-zinc-700 font-bold tracking-[0.5em] uppercase mt-3 italic">Node Alpha v3.4</span>
+                <span className="text-[12px] text-zinc-700 font-bold tracking-[0.5em] uppercase mt-3 italic">Node Alpha v3.5</span>
               </div>
             </div>
 
@@ -237,8 +236,8 @@ export default function App() {
           <div className="p-12 mt-auto">
             <div className="p-8 bg-black/50 rounded-[3rem] border border-white/5 flex flex-col items-center gap-4 shadow-inner text-center">
               <Activity className="w-7 h-7 text-indigo-500/40" />
-              <div className="overflow-hidden w-full">
-                <p className="text-[12px] text-zinc-700 font-black uppercase tracking-[0.4em] mb-2">Integritas Node</p>
+              <div className="overflow-hidden w-full text-center">
+                <p className="text-[12px] text-zinc-700 font-black uppercase tracking-widest mb-1">Integritas Node</p>
                 <p className="text-[13px] text-zinc-600 font-mono uppercase font-black tracking-widest italic leading-none truncate">
                    {connectionStatus === 'online' ? 'Optimal 100%' : 'Gagal Handshake'}
                 </p>
@@ -249,15 +248,18 @@ export default function App() {
 
         {/* PANEL 2: TENGAH (Daftar Transmisi) */}
         <section className="w-full md:w-[450px] lg:w-[520px] flex flex-col border-r border-white/5 bg-black/30 backdrop-blur-md">
-          <div className="p-14 pb-12 border-b border-white/5">
+          <div className="p-14 pb-12 border-b border-white/5 text-left">
             <div className="flex items-center justify-between mb-14">
               <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase drop-shadow-2xl">Transmisi</h2>
-              <button 
-                onClick={() => fetchMessages(true)} 
-                className={`p-4 bg-[#0a0a0a] border border-white/10 hover:border-indigo-500/60 rounded-2xl transition-all shadow-3xl ${fetching ? 'text-indigo-500' : 'text-zinc-700 hover:text-white'}`}
-              >
-                <RefreshCw className={`w-6 h-6 ${fetching ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="flex items-center gap-3">
+                 {fetching && <span className="text-[10px] font-black text-indigo-500 animate-pulse uppercase tracking-widest italic">Memindai...</span>}
+                 <button 
+                  onClick={() => fetchMessages(true)} 
+                  className={`p-4 bg-[#0a0a0a] border border-white/10 hover:border-indigo-500/60 rounded-2xl transition-all shadow-3xl ${fetching ? 'text-indigo-500' : 'text-zinc-700 hover:text-white'}`}
+                >
+                  <RefreshCw className={`w-6 h-6 ${fetching ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             </div>
 
             {connectionError && (
@@ -270,7 +272,7 @@ export default function App() {
               </div>
             )}
 
-            <div className="relative group">
+            <div className="relative group text-left">
               <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 text-zinc-800 group-focus-within:text-indigo-500 transition-all duration-500" />
               <input 
                 type="text" 
@@ -280,29 +282,30 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-8 space-y-5 custom-scrollbar bg-zinc-950/40">
+          <div className="flex-grow overflow-y-auto p-8 space-y-5 custom-scrollbar bg-zinc-950/40 text-left">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center p-20 text-center opacity-30 italic">
                 <div className="w-32 h-32 bg-[#0c0c0c] rounded-full flex items-center justify-center mb-12 border border-dashed border-zinc-800 shadow-[inset_0_0_50px_rgba(0,0,0,1)]">
                   <Mail className="w-14 h-14 text-zinc-800" />
                 </div>
                 <p className="text-[14px] font-black uppercase tracking-[0.6em] text-zinc-800 italic leading-none">Frekuensi Kosong</p>
+                <p className="text-[10px] mt-4 text-zinc-900 font-bold uppercase">Menunggu paket dari {email}</p>
               </div>
             ) : (
               messages.map((msg) => (
                 <div 
                   key={msg.id}
                   onClick={() => setSelectedMessage(msg)}
-                  className={`relative p-8 rounded-[3.2rem] cursor-pointer transition-all duration-1000 border group shadow-3xl ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/50 ring-2 ring-indigo-500/10' : 'hover:bg-white/5 border-transparent hover:border-white/5'}`}
+                  className={`relative p-8 rounded-[3.2rem] cursor-pointer transition-all duration-1000 border group shadow-3xl text-left ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/50 ring-2 ring-indigo-500/10' : 'hover:bg-white/5 border-transparent hover:border-white/5'}`}
                 >
-                  <div className="flex justify-between items-start mb-6 uppercase">
+                  <div className="flex justify-between items-start mb-6 uppercase text-left">
                     <div className="flex items-center gap-6 max-w-[80%] text-left">
                       <div className={`w-3.5 h-3.5 rounded-full ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,1)]' : 'bg-zinc-900'}`}></div>
                       <p className={`text-[17px] font-black truncate tracking-tighter uppercase ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-700'}`}>
                         {(msg.sender || "Unknown").split('<')[0].trim()}
                       </p>
                     </div>
-                    <span className="text-[11px] text-zinc-800 font-black bg-black/90 px-4 py-2 rounded-2xl border border-white/5 uppercase tracking-tighter italic shadow-2xl">
+                    <span className="text-[11px] text-zinc-800 font-black bg-black/80 px-4 py-2 rounded-2xl border border-white/5 uppercase tracking-tighter italic shadow-2xl">
                       {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -320,11 +323,11 @@ export default function App() {
           {selectedMessage ? (
             <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-16 duration-[1500ms] text-left">
               {/* Header Reader */}
-              <div className="p-16 md:p-20 border-b border-white/5 bg-zinc-950/80 flex items-center justify-between backdrop-blur-3xl shadow-2xl">
-                <div className="flex items-center gap-14 text-left text-left">
+              <div className="p-16 md:p-20 border-b border-white/5 bg-zinc-950/80 flex items-center justify-between backdrop-blur-3xl shadow-2xl text-left">
+                <div className="flex items-center gap-14 text-left">
                   <div className="relative">
                     <div className="absolute inset-0 bg-indigo-600 blur-[60px] opacity-40"></div>
-                    <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 via-indigo-950 to-black rounded-[3.5rem] flex items-center justify-center font-black text-white text-6xl shadow-[0_30px_80px_rgba(99,102,241,0.4)] border border-white/10 italic transform hover:scale-110 transition-transform duration-1000 cursor-default text-left">
+                    <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 via-indigo-950 to-black rounded-[3.5rem] flex items-center justify-center font-black text-white text-6xl shadow-[0_30px_80px_rgba(99,102,241,0.4)] border border-white/10 italic transform hover:scale-110 transition-transform duration-1000 cursor-default">
                       {(selectedMessage.sender || "?")[0].toUpperCase()}
                     </div>
                   </div>
@@ -332,7 +335,7 @@ export default function App() {
                     <h3 className="text-5xl md:text-6xl font-black text-white leading-tight mb-8 tracking-tighter uppercase italic drop-shadow-2xl">
                       {selectedMessage.subject || '(Protokol: Tanpa Data)'}
                     </h3>
-                    <div className="flex items-center gap-7">
+                    <div className="flex items-center gap-7 text-left">
                       <span className="text-[13px] text-zinc-800 font-black uppercase tracking-[0.4em] italic">Asal:</span>
                       <span className="text-[15px] text-indigo-400 font-bold font-mono px-7 py-3 bg-indigo-500/5 rounded-[1.5rem] border border-indigo-500/10 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
                         {selectedMessage.sender}
@@ -378,7 +381,7 @@ export default function App() {
                    <Inbox className="w-32 h-32 text-zinc-950 transition-all duration-[3000ms] group-hover:text-indigo-950 group-hover:drop-shadow-[0_0_50px_rgba(99,102,241,0.4)] opacity-30" />
                 </div>
               </div>
-              <h3 className="text-8xl font-black text-[#111] mb-10 tracking-[0.5em] uppercase leading-none italic opacity-95 drop-shadow-2xl">
+              <h3 className="text-8xl font-black text-[#111] mb-10 tracking-[0.5em] uppercase leading-none italic opacity-95 drop-shadow-2xl text-center">
                  {connectionStatus === 'offline' ? 'BRIDGE DOWN' : 'SIAGA'}
               </h3>
               <p className="text-[16px] max-w-lg text-zinc-900 leading-relaxed font-black uppercase tracking-[0.8em] italic opacity-20 leading-[2.5] text-center mx-auto uppercase">
@@ -394,7 +397,7 @@ export default function App() {
                Akses Terenkripsi
             </div>
             <div className="w-px h-12 bg-zinc-950"></div>
-            <div className="text-zinc-900 italic">Node: {MY_DOMAIN}</div>
+            <div className="text-zinc-900">Node: {MY_DOMAIN}</div>
           </div>
         </main>
       </div>
