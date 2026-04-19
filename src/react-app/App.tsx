@@ -3,13 +3,13 @@ import {
   Mail, RefreshCw, Trash2, 
   ShieldCheck, Inbox, 
   Search, AlertTriangle, Activity,
-  Copy, Check, ChevronRight, Terminal
+  Copy, Check, Terminal
 } from 'lucide-react';
 
 /**
  * FRONTEND PRIVATE MAIL v4.1.1 PRO
  * Tampilan Ultra-Premium & Sinkronisasi Real-time
- * Fix: JSX Character Escaping
+ * Fix: Removed unused ChevronRight import
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
