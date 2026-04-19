@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Mail, RefreshCw, Trash2, Eye, Copy, Check, Clock, ShieldCheck, Globe } from 'lucide-react';
+import { Mail, RefreshCw, Trash2, Eye, Copy, Check, Clock, ShieldCheck, Globe, Inbox, Send, Star, AlertCircle } from 'lucide-react';
 
 /**
  * KONFIGURASI FINAL:
@@ -8,7 +8,6 @@ import { Mail, RefreshCw, Trash2, Eye, Copy, Check, Clock, ShieldCheck, Globe } 
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
 
-// Definisi struktur data pesan agar TypeScript tidak error
 interface EmailMessage {
   id: string;
   from: string;
@@ -26,7 +25,6 @@ export default function App() {
   const [fetching, setFetching] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Fungsi untuk membuat alamat email acak baru
   const generateRandomEmail = () => {
     setLoading(true);
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -42,17 +40,13 @@ export default function App() {
     setLoading(false);
   };
 
-  // Fungsi untuk mengambil pesan dari Backend (Cloudflare Worker)
   const fetchMessages = useCallback(async (showLoading = false) => {
     if (!email || email === '') return;
     if (showLoading) setFetching(true);
     try {
-      // Membersihkan URL dari trailing slash jika ada
       const baseUrl = WORKER_URL.endsWith('/') ? WORKER_URL.slice(0, -1) : WORKER_URL;
       const response = await fetch(`${baseUrl}/messages?email=${email}`);
-      
       if (!response.ok) throw new Error("Gagal terhubung ke API");
-      
       const data = await response.json();
       setMessages(data as EmailMessage[]);
     } catch (err) {
@@ -62,7 +56,6 @@ export default function App() {
     }
   }, [email]);
 
-  // Load email terakhir dari localStorage saat aplikasi dibuka
   useEffect(() => {
     const saved = localStorage.getItem('saved_temp_email');
     if (saved && saved.endsWith(MY_DOMAIN)) {
@@ -72,7 +65,6 @@ export default function App() {
     }
   }, []);
 
-  // Auto-refresh inbox setiap 8 detik
   useEffect(() => {
     if (!email) return;
     fetchMessages(false);
@@ -80,7 +72,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [fetchMessages, email]);
 
-  // Fungsi untuk menyalin email ke clipboard (fallback untuk iFrame)
   const copyToClipboard = () => {
     if (!email) return;
     const textArea = document.createElement("textarea");
@@ -98,172 +89,178 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans p-4 md:p-8 selection:bg-blue-500/30">
-      <div className="max-w-5xl mx-auto">
-        
-        {/* Header Section */}
-        <header className="flex flex-col items-center mb-10">
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-3xl shadow-2xl shadow-blue-500/20 mb-4 animate-pulse-slow">
-            <ShieldCheck className="w-10 h-10 text-white" />
+    <div className="flex h-screen w-full bg-[#0a0a0a] text-zinc-300 font-sans overflow-hidden">
+      
+      {/* 1. LEFT SIDEBAR (Navigation & Identity) */}
+      <aside className="w-80 flex flex-col border-r border-zinc-800 bg-[#0f0f0f]">
+        <div className="p-6 border-b border-zinc-800">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20">
+              <ShieldCheck className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-white tracking-tight">Private Mail</h1>
           </div>
-          <h1 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-200 to-neutral-500 text-center uppercase">
-            Private Mail
-          </h1>
-          <div className="flex items-center gap-2 mt-2 text-neutral-500 text-sm">
-            <Globe className="w-4 h-4 text-blue-500/50" />
-            <span>Domain aktif: <span className="text-blue-400 font-mono font-bold">{MY_DOMAIN}</span></span>
-          </div>
-        </header>
-
-        {/* Email Display & Generator */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-6 mb-8 shadow-2xl backdrop-blur-sm">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-grow group">
-              <input 
-                readOnly
-                value={loading ? "Generating..." : email}
-                className="w-full bg-neutral-800/50 border border-neutral-700 rounded-2xl py-5 px-6 font-mono text-xl text-blue-400 focus:outline-none focus:border-blue-500/50 transition-all"
-              />
-              <button 
-                onClick={copyToClipboard}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-neutral-700 hover:bg-neutral-600 rounded-xl transition-all active:scale-90"
-                title="Salin Alamat"
-              >
-                {copied ? <Check className="text-green-400 w-6 h-6" /> : <Copy className="text-neutral-300 w-6 h-6" />}
-              </button>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl">
+              <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Alamat Aktif</p>
+              <div className="flex items-center justify-between gap-2 overflow-hidden">
+                <span className="text-sm font-mono text-indigo-400 truncate">{loading ? '...' : email}</span>
+                <button onClick={copyToClipboard} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 transition-colors">
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <button 
               onClick={generateRandomEmail}
-              disabled={loading}
-              className="px-8 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-blue-600/20 disabled:opacity-50"
+              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
             >
-              <RefreshCw className={loading ? 'animate-spin' : ''} />
-              <span>Ganti Email</span>
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Ganti Alamat Baru
             </button>
           </div>
-          {copied && (
-            <div className="flex items-center gap-2 mt-3 ml-2 text-green-500 text-xs font-medium animate-in fade-in slide-in-from-left-2">
-              <Check className="w-3 h-3" />
-              <span>Berhasil disalin ke clipboard!</span>
+        </div>
+
+        <nav className="flex-grow p-4 space-y-2">
+          <div className="flex items-center gap-3 px-4 py-3 bg-indigo-500/10 text-indigo-400 rounded-xl font-medium cursor-pointer">
+            <Inbox className="w-5 h-5" /> Inbox
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 rounded-xl font-medium cursor-pointer transition-colors opacity-40 grayscale pointer-events-none">
+            <Send className="w-5 h-5" /> Sent
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 rounded-xl font-medium cursor-pointer transition-colors opacity-40 grayscale pointer-events-none">
+            <Star className="w-5 h-5" /> Starred
+          </div>
+        </nav>
+
+        <div className="p-6 border-t border-zinc-800 mt-auto">
+          <div className="flex items-center gap-2 text-xs text-zinc-600 mb-1">
+            <Globe className="w-3 h-3 text-indigo-500/50" />
+            <span>Server: {MY_DOMAIN}</span>
+          </div>
+          <p className="text-[10px] text-zinc-700 font-medium">© 2024 Private Mail System</p>
+        </div>
+      </aside>
+
+      {/* 2. MIDDLE PANE (Message List) */}
+      <section className="w-[400px] flex flex-col border-r border-zinc-800 bg-[#0c0c0c]">
+        <div className="p-6 flex items-center justify-between border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            Inbox 
+            <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-normal">
+              {messages.length}
+            </span>
+          </h2>
+          <button onClick={() => fetchMessages(true)} className={`p-2 hover:bg-zinc-800 rounded-full text-zinc-500 ${fetching ? 'animate-spin text-indigo-500' : ''}`}>
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-grow overflow-y-auto overflow-x-hidden p-2 space-y-1 custom-scrollbar">
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center text-zinc-600">
+              <div className="w-12 h-12 rounded-full border-2 border-dashed border-zinc-800 flex items-center justify-center mb-4">
+                <Mail className="w-6 h-6 opacity-20" />
+              </div>
+              <p className="text-sm">Belum ada pesan</p>
+              <p className="text-[10px] uppercase tracking-widest mt-1">Cek otomatis aktif...</p>
             </div>
+          ) : (
+            messages.map((msg) => (
+              <div 
+                key={msg.id}
+                onClick={() => setSelectedMessage(msg)}
+                className={`p-4 rounded-2xl cursor-pointer transition-all border ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/40' : 'hover:bg-zinc-800/50 border-transparent'}`}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <p className={`text-sm font-bold truncate pr-4 ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-300'}`}>
+                    {msg.from}
+                  </p>
+                  <span className="text-[10px] text-zinc-600 whitespace-nowrap">
+                    {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 truncate mb-2">{msg.subject || '(Tanpa Subjek)'}</p>
+                <div className="flex items-center gap-2">
+                   <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                   <span className="text-[9px] text-zinc-600 uppercase font-bold tracking-tighter">New Message</span>
+                </div>
+              </div>
+            ))
           )}
         </div>
+      </section>
 
-        {/* Inbox Interface */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[500px]">
-          
-          {/* List Pesan (Sidebar) */}
-          <div className="lg:col-span-4 bg-neutral-900 border border-neutral-800 rounded-[2rem] overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-neutral-800 flex justify-between items-center bg-neutral-800/20">
-              <h2 className="font-bold flex items-center gap-2 text-neutral-300">
-                <Clock className="w-4 h-4 text-blue-500" /> Inbox
-              </h2>
+      {/* 3. RIGHT PANE (Reading Area) */}
+      <main className="flex-grow flex flex-col bg-[#0a0a0a]">
+        {selectedMessage ? (
+          <>
+            {/* Toolbar */}
+            <div className="h-20 p-6 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-indigo-500/10">
+                  {selectedMessage.from[0].toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-lg leading-none mb-1">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
+                  <p className="text-xs text-zinc-500">Dari: <span className="text-zinc-300">{selectedMessage.from}</span></p>
+                </div>
+              </div>
               <div className="flex items-center gap-2">
-                 <span className="text-[10px] bg-neutral-800 px-2 py-1 rounded text-neutral-500 font-mono">
-                  {messages.length} pesan
-                 </span>
-                 {fetching && <RefreshCw className="w-3 h-3 animate-spin text-blue-500" />}
+                <span className="text-xs text-zinc-600 mr-4 italic">{new Date(selectedMessage.date).toLocaleString()}</span>
+                <button 
+                  onClick={() => setSelectedMessage(null)}
+                  className="p-3 hover:bg-zinc-800 rounded-xl text-zinc-500 hover:text-red-400 transition-all"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
             </div>
-            
-            <div className="flex-grow overflow-y-auto p-2 custom-scrollbar">
-              {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-neutral-600 p-8 text-center">
-                  <div className="w-16 h-16 bg-neutral-800/50 rounded-full flex items-center justify-center mb-4">
-                    <Mail className="w-8 h-8 opacity-20" />
-                  </div>
-                  <p className="text-sm font-medium">Belum ada pesan</p>
-                  <p className="text-[10px] mt-1 opacity-50 uppercase tracking-widest italic">Menunggu email masuk...</p>
-                </div>
-              ) : (
-                messages.map(msg => (
-                  <div 
-                    key={msg.id}
-                    onClick={() => setSelectedMessage(msg)}
-                    className={`p-4 mb-2 rounded-2xl cursor-pointer transition-all duration-200 group ${selectedMessage?.id === msg.id ? 'bg-blue-600/10 border border-blue-600/30' : 'hover:bg-neutral-800/50 border border-transparent'}`}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <p className="font-bold text-sm truncate text-neutral-200 flex-grow pr-2">{msg.from}</p>
-                      <p className="text-[9px] text-neutral-600 whitespace-nowrap mt-1 italic">
-                        {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    <p className="text-xs text-neutral-500 truncate group-hover:text-neutral-400 transition-colors">{msg.subject || '(Tanpa Subjek)'}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
 
-          {/* Viewer Pesan (Main Content) */}
-          <div className="lg:col-span-8 bg-neutral-900 border border-neutral-800 rounded-[2rem] overflow-hidden flex flex-col shadow-2xl">
-            {selectedMessage ? (
-              <>
-                <div className="p-8 border-b border-neutral-800 bg-neutral-800/30 backdrop-blur-md">
-                  <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-2xl font-bold text-white leading-tight">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
-                    <button 
-                      onClick={() => setSelectedMessage(null)} 
-                      className="p-2 hover:bg-neutral-700/50 rounded-full transition-colors group"
-                    >
-                      <Trash2 className="w-5 h-5 text-neutral-500 group-hover:text-red-400 transition-colors" />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-lg">
-                      {selectedMessage.from ? selectedMessage.from[0].toUpperCase() : '?'}
-                    </div>
-                    <div>
-                      <p className="font-bold text-neutral-200">{selectedMessage.from}</p>
-                      <p className="text-xs text-neutral-500">Diterima pada {new Date(selectedMessage.date).toLocaleString()}</p>
-                    </div>
-                  </div>
+            {/* Content Area */}
+            <div className="flex-grow p-10 overflow-y-auto">
+              <div className="max-w-4xl mx-auto bg-zinc-900/30 p-8 rounded-3xl border border-zinc-800/50">
+                <div className="text-zinc-300 leading-relaxed text-base md:text-lg whitespace-pre-wrap font-sans selection:bg-indigo-500/30">
+                  {selectedMessage.body}
                 </div>
-                <div className="flex-grow p-8 overflow-y-auto bg-neutral-900/50 custom-scrollbar">
-                  <div className="whitespace-pre-wrap font-sans text-neutral-300 leading-relaxed text-base">
-                    {selectedMessage.body}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-neutral-600 p-10 text-center">
-                <div className="relative mb-6">
-                  <Eye className="w-20 h-20 opacity-5" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Mail className="w-8 h-8 opacity-10" />
-                  </div>
-                </div>
-                <p className="text-lg font-medium text-neutral-700">Pilih pesan untuk dibaca</p>
-                <p className="text-sm text-neutral-800 mt-2 italic">Isi pesan akan muncul di sini secara otomatis</p>
               </div>
-            )}
+              
+              <div className="mt-12 text-center">
+                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-full border border-zinc-800 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                   <AlertCircle className="w-3 h-3 text-indigo-500" />
+                   Pesan akan terhapus otomatis dalam 1 jam
+                 </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-grow flex flex-col items-center justify-center text-center p-20 opacity-30 select-none">
+            <div className="relative mb-8">
+              <div className="w-32 h-32 bg-zinc-900 rounded-full flex items-center justify-center">
+                 <Mail className="w-16 h-16 text-zinc-700" />
+              </div>
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#0a0a0a] rounded-full flex items-center justify-center">
+                <Eye className="w-6 h-6 text-zinc-800" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-zinc-500 mb-2">Pilih Pesan untuk Dibaca</h3>
+            <p className="text-sm max-w-xs leading-relaxed">Pesan yang masuk ke alamat email sementara Anda akan muncul di sini secara otomatis.</p>
           </div>
-        </div>
-
-        {/* Footer Info */}
-        <footer className="mt-10 flex flex-col md:flex-row items-center justify-between gap-4 text-neutral-600 text-[10px] uppercase tracking-[0.2em]">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span>System Status: Operational</span>
-          </div>
-          <p className="font-medium italic">
-            Powered by Cloudflare Workers &bull; Auto-Cleanup Enabled
-          </p>
-        </footer>
-      </div>
+        )}
+      </main>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #262626; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #404040; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f1f23; border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #2d2d33; }
         
         @keyframes pulse-slow {
           0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.95; transform: scale(1.02); }
+          50% { opacity: 0.9; transform: scale(1.05); }
         }
         .animate-pulse-slow {
-          animation: pulse-slow 4s ease-in-out infinite;
+          animation: pulse-slow 3s ease-in-out infinite;
         }
       `}</style>
     </div>
