@@ -3,7 +3,7 @@ import {
   Mail, RefreshCw, Trash2, 
   ShieldCheck, Inbox, 
   Search, AlertTriangle, Activity,
-  Copy, Check, Clock, Lock
+  Copy, Check
 } from 'lucide-react';
 
 /**
@@ -213,11 +213,6 @@ export default function App() {
               </div>
               <span className="bg-indigo-500 text-white px-2.5 py-0.5 rounded-lg text-[10px]">{messages.length}</span>
             </div>
-            {['Arsip', 'Berbintang', 'Dihancurkan'].map((item, idx) => (
-              <div key={idx} className="flex items-center gap-5 px-8 py-5 text-zinc-700 rounded-3xl font-bold text-[11px] uppercase tracking-widest cursor-not-allowed opacity-30 transition-all hover:bg-white/5">
-                <Lock className="w-5 h-5" /> {item}
-              </div>
-            ))}
           </nav>
 
           <div className="p-10 mt-auto">
@@ -249,7 +244,7 @@ export default function App() {
             {connectionError && (
               <div className="mb-6 p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex items-start gap-4 text-red-400 animate-in zoom-in">
                 <AlertTriangle className="w-6 h-6 shrink-0 mt-0.5" />
-                <div className="text-[11px] leading-relaxed font-bold italic">
+                <div className="text-[11px] leading-relaxed font-bold italic text-left">
                    Koneksi ditolak browser. Periksa pengaturan CORS pada node backend.
                 </div>
               </div>
@@ -313,11 +308,11 @@ export default function App() {
                     </div>
                   </div>
                   <div className="max-w-2xl text-left">
-                    <h3 className="text-4xl md:text-5xl font-black text-white leading-none mb-6 tracking-tighter uppercase italic drop-shadow-2xl leading-none">
+                    <h3 className="text-4xl md:text-5xl font-black text-white leading-none mb-6 tracking-tighter uppercase italic drop-shadow-2xl">
                       {selectedMessage.subject || '(Tanpa Subjek)'}
                     </h3>
                     <div className="flex items-center gap-5">
-                      <span className="text-[11px] text-zinc-700 font-black uppercase tracking-widest italic">Asal:</span>
+                      <span className="text-[11px] text-zinc-700 font-black uppercase tracking-widest italic text-left">Asal:</span>
                       <span className="text-[13px] text-indigo-400 font-bold font-mono px-5 py-2 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 shadow-inner">
                         {selectedMessage.from}
                       </span>
@@ -354,9 +349,9 @@ export default function App() {
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-24 text-center animate-in fade-in duration-[2000ms]">
-              <div className="relative mb-20 group">
+              <div className="relative mb-20 group text-center">
                 <div className="absolute inset-0 bg-indigo-500/5 blur-[150px] rounded-full group-hover:bg-indigo-500/10 transition duration-[3000ms]"></div>
-                <div className="relative w-64 h-64 bg-[#080808] border-2 border-white/5 rounded-[6rem] flex items-center justify-center shadow-[0_0_120px_rgba(0,0,0,1)] overflow-hidden">
+                <div className="relative w-64 h-64 bg-[#080808] border-2 border-white/5 rounded-[6rem] flex items-center justify-center shadow-[0_0_120px_rgba(0,0,0,1)] overflow-hidden mx-auto">
                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/5 via-transparent to-transparent"></div>
                    <Inbox className="w-24 h-24 text-zinc-950 opacity-40 group-hover:text-indigo-400 group-hover:opacity-100 transition-all duration-[2000ms]" />
                 </div>
@@ -364,7 +359,7 @@ export default function App() {
               <h3 className="text-6xl font-black text-[#111] mb-8 tracking-[0.4em] uppercase leading-none italic opacity-90 drop-shadow-sm">
                  {connectionStatus === 'offline' ? 'BRIDGE DOWN' : 'STANDBY'}
               </h3>
-              <p className="text-[13px] max-w-sm text-zinc-900 leading-relaxed font-black uppercase tracking-[0.6em] italic opacity-20 leading-[2.5]">
+              <p className="text-[13px] max-w-sm text-zinc-900 leading-relaxed font-black uppercase tracking-[0.6em] italic opacity-20 leading-[2.5] mx-auto text-center">
                 {connectionStatus === 'offline' ? 'Kegagalan dekripsi. Node tidak dapat dijangkau.' : 'Menunggu transmisi data terenkripsi masuk.'}
               </p>
             </div>
