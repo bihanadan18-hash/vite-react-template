@@ -5,10 +5,6 @@ import {
   ChevronRight, Zap, Shield, Search, Lock, AlertTriangle, Activity
 } from 'lucide-react';
 
-/**
- * KONFIGURASI FINAL:
- * URL dan Domain sudah disesuaikan dengan milik Anda.
- */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
 
@@ -33,27 +29,21 @@ export default function App() {
   
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Fungsi untuk mengecek status API dan menangkap kendala CORS
   const checkApiHealth = useCallback(async () => {
     try {
-      const baseUrl = WORKER_URL.endsWith('/') ? WORKER_URL.slice(0, -1) : WORKER_URL;
-      
+      const baseUrl = WORKER_URL.replace(/\/$/, ""); 
       const response = await fetch(baseUrl, { 
         method: 'GET', 
         mode: 'cors',
-        credentials: 'omit'
+        cache: 'no-cache'
       });
-      
       if (response.ok) {
         setConnectionStatus('online');
         setConnectionError(null);
-      } else {
-        throw new Error(`Status: ${response.status}`);
       }
     } catch (err: any) {
-      console.error("Health Check Failed:", err);
       setConnectionStatus('offline');
-      setConnectionError("API aktif, tetapi koneksi ditolak oleh kebijakan keamanan (CORS).");
+      setConnectionError("Handshake gagal. Browser memblokir koneksi (CORS).");
     }
   }, []);
 
@@ -62,9 +52,7 @@ export default function App() {
     setConnectionError(null);
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
     const newEmail = `${result}@${MY_DOMAIN}`;
     setEmail(newEmail);
     setMessages([]);
@@ -74,43 +62,34 @@ export default function App() {
   };
 
   const fetchMessages = useCallback(async (showLoading = false) => {
-    if (!email || email === '') return;
+    if (!email) return;
     if (showLoading) setFetching(true);
     
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
     try {
-      const baseUrl = WORKER_URL.endsWith('/') ? WORKER_URL.slice(0, -1) : WORKER_URL;
-      const targetUrl = `${baseUrl}/messages?email=${encodeURIComponent(email)}`;
-      
-      const response = await fetch(targetUrl, {
+      const baseUrl = WORKER_URL.replace(/\/$/, "");
+      // Gunakan URL sederhana untuk meminimalisir kegagalan CORS
+      const response = await fetch(`${baseUrl}/messages?email=${encodeURIComponent(email)}`, {
         signal: abortControllerRef.current.signal,
         method: 'GET',
         mode: 'cors',
-        headers: { 'Accept': 'application/json' },
-        credentials: 'omit'
+        headers: { 'Accept': 'application/json' }
       });
       
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-      
+      if (!response.ok) throw new Error("API error");
       const data = await response.json();
       
       if (Array.isArray(data)) {
         setMessages(data);
-      } else {
-        setMessages([]);
+        setConnectionStatus('online');
+        setConnectionError(null);
       }
-      
-      setConnectionStatus('online');
-      setConnectionError(null); 
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.error("Fetch Messages Error:", err);
         setConnectionStatus('offline');
-        setConnectionError("Gagal mengambil data dari tunnel terenkripsi.");
+        setConnectionError("Gagal sinkronisasi. Cek CORS di Cloudflare Worker.");
       }
     } finally {
       if (showLoading) setFetching(false);
@@ -120,21 +99,15 @@ export default function App() {
   useEffect(() => {
     checkApiHealth();
     const saved = localStorage.getItem('saved_temp_email');
-    if (saved && saved.endsWith(MY_DOMAIN)) {
-      setEmail(saved);
-    } else {
-      generateRandomEmail();
-    }
-    
-    return () => {
-      if (abortControllerRef.current) abortControllerRef.current.abort();
-    };
+    if (saved && saved.endsWith(MY_DOMAIN)) setEmail(saved);
+    else generateRandomEmail();
+    return () => { if (abortControllerRef.current) abortControllerRef.current.abort(); };
   }, [checkApiHealth]);
 
   useEffect(() => {
     if (!email) return;
     fetchMessages(false);
-    const interval = setInterval(() => fetchMessages(false), 12000);
+    const interval = setInterval(() => fetchMessages(false), 15000); 
     return () => clearInterval(interval);
   }, [fetchMessages, email]);
 
@@ -144,314 +117,163 @@ export default function App() {
     textArea.value = email;
     document.body.appendChild(textArea);
     textArea.select();
-    try {
-      document.execCommand('copy');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Gagal menyalin:', err);
-    }
+    document.execCommand('copy');
     document.body.removeChild(textArea);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#030303] text-zinc-300 font-sans selection:bg-indigo-500/30 flex items-center justify-center p-0 md:p-6 lg:p-12 overflow-hidden">
-      
-      {/* Background Glow Dinamis */}
+    <div className="min-h-screen w-full bg-[#030303] text-zinc-300 font-sans selection:bg-indigo-500/30 grid place-items-center p-0 md:p-6 lg:p-12 overflow-hidden">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/5 blur-[150px] rounded-full animate-pulse-slow"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600/5 blur-[150px] rounded-full animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-indigo-600/5 blur-[180px] rounded-full animate-pulse-slow"></div>
+        <div className="absolute bottom-[-30%] right-[-20%] w-[80%] h-[80%] bg-purple-600/5 blur-[180px] rounded-full animate-pulse-slow" style={{ animationDelay: '4s' }}></div>
       </div>
 
-      {/* Main Glass Application Container */}
-      <div 
-        style={{ placeSelf: 'center' }}
-        className="relative w-full h-full md:h-[88vh] max-w-[1450px] flex flex-col md:flex-row bg-[#0a0a0a]/90 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden"
-      >
+      <div style={{ placeSelf: 'center' }} className="relative w-full h-full md:h-[92vh] max-w-[1550px] flex flex-col md:flex-row bg-[#080808]/95 backdrop-blur-3xl border border-white/5 rounded-none md:rounded-[4.5rem] shadow-[0_60px_150px_rgba(0,0,0,1)] overflow-hidden transition-all duration-700">
         
-        {/* PANEL 1: SIDEBAR */}
-        <aside className="w-full md:w-72 lg:w-80 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/40">
-          <div className="p-8 pb-4">
-            <div className="flex items-center gap-4 mb-12 group cursor-default">
-              <div className="relative">
-                <div className="absolute inset-0 bg-indigo-500/50 blur-xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
-                <div className="relative p-3.5 bg-gradient-to-br from-indigo-500 to-indigo-800 rounded-[1.2rem] shadow-[0_0_25px_rgba(99,102,241,0.4)]">
-                  <ShieldCheck className="w-7 h-7 text-white" />
-                </div>
+        <aside className="w-full md:w-88 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-white/5 bg-black/60">
+          <div className="p-12 pb-8">
+            <div className="flex items-center gap-6 mb-16 group cursor-default">
+              <div className="relative p-5 bg-gradient-to-br from-indigo-500 via-indigo-800 to-black rounded-[1.6rem] shadow-[0_15px_40px_rgba(99,102,241,0.6)] border border-white/10">
+                <ShieldCheck className="w-10 h-10 text-white" />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-2xl font-black text-white tracking-tighter italic leading-none">PRIVATEMAY</h1>
-                <span className="text-[10px] text-zinc-600 font-bold tracking-[0.4em] uppercase mt-1.5">Alpha Protocol</span>
+                <h1 className="text-3xl font-black text-white tracking-tighter italic leading-none uppercase">PrivateMay</h1>
+                <span className="text-[12px] text-zinc-800 font-bold tracking-[0.6em] uppercase mt-3">Secure Alpha</span>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur-md opacity-0 group-hover:opacity-100 transition duration-700"></div>
-                <div className="relative p-6 bg-zinc-900/40 border border-white/5 rounded-3xl backdrop-blur-xl shadow-inner">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full animate-pulse ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]'}`}></div>
-                      <span className="text-[10px] text-zinc-500 uppercase font-black tracking-[0.2em]">
-                        {connectionStatus === 'online' ? 'Tunnel Active' : 'Tunnel Failed'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    <span className="text-sm font-mono text-indigo-300 truncate font-bold tracking-tight">
-                      {loading ? 'Decrypting...' : email}
+            <div className="space-y-10">
+              <div className="relative p-8 bg-[#0b0b0b] border border-white/10 rounded-[3rem] shadow-2xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full animate-pulse ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_15px_rgba(34,197,94,1)]' : 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,1)]'}`}></div>
+                    <span className="text-[12px] text-zinc-600 font-black tracking-widest uppercase">
+                      {connectionStatus === 'online' ? 'Link Live' : 'Link Dead'}
                     </span>
-                    <button 
-                      onClick={copyToClipboard} 
-                      className="w-full py-3 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white rounded-2xl transition-all border border-white/5 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest"
-                    >
-                      {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-indigo-400" />}
-                      {copied ? 'Copied' : 'Copy ID'}
-                    </button>
                   </div>
                 </div>
+                <div className="bg-black/60 p-4 rounded-2xl border border-white/5 mb-6 text-center italic">
+                  <span className="text-sm font-mono text-indigo-300 font-black">{loading ? '...' : email}</span>
+                </div>
+                <button onClick={copyToClipboard} className="w-full py-5 bg-white/5 hover:bg-indigo-600/20 text-zinc-500 hover:text-indigo-300 rounded-[1.2rem] transition-all border border-white/5 text-xs font-black uppercase tracking-widest">
+                  {copied ? 'Copied' : 'Copy Hash'}
+                </button>
               </div>
 
-              <button 
-                onClick={generateRandomEmail}
-                disabled={loading}
-                className="w-full py-4.5 bg-white hover:bg-zinc-200 text-black rounded-[1.5rem] font-black text-[11px] tracking-[0.1em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-2xl"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                ROTATE IDENTITY
+              <button onClick={generateRandomEmail} className="w-full py-6 bg-white hover:bg-zinc-200 text-black rounded-[2.5rem] font-black text-[13px] tracking-[0.2em] uppercase active:scale-95 shadow-2xl italic">
+                <RefreshCw className={`w-5 h-5 inline mr-3 ${loading ? 'animate-spin' : ''}`} />
+                Rotate Node
               </button>
             </div>
           </div>
 
-          <nav className="flex-grow px-5 mt-10 space-y-2">
-            <div className="flex items-center justify-between px-6 py-4.5 bg-indigo-500/10 text-indigo-400 rounded-2xl font-black text-[11px] uppercase tracking-widest border border-indigo-500/20 cursor-pointer shadow-[0_10px_30px_rgba(99,102,241,0.15)]">
-              <div className="flex items-center gap-5 italic">
-                <Inbox className="w-5 h-5" /> Incoming
-              </div>
-              <span className="bg-indigo-500 text-white px-2.5 py-0.5 rounded-lg text-[10px] shadow-lg">{messages.length}</span>
+          <nav className="flex-grow px-8 mt-10 space-y-4">
+            <div className="flex items-center justify-between px-10 py-6 bg-indigo-600/10 text-indigo-400 rounded-[2.2rem] font-black text-[13px] uppercase tracking-[0.3em] border border-indigo-500/30">
+              <div className="flex items-center gap-6 italic"><Inbox className="w-6 h-6" /> Packets</div>
+              <span className="bg-indigo-500 text-white px-4 py-1 rounded-2xl text-[12px]">{messages.length}</span>
             </div>
-            {['Archive', 'Starred', 'Destroyed'].map((item, idx) => (
-              <div key={idx} className="flex items-center gap-5 px-6 py-4.5 text-zinc-700 rounded-2xl font-bold text-[11px] uppercase tracking-widest cursor-not-allowed opacity-30 transition-all hover:bg-white/5">
-                {idx === 0 ? <Send className="w-5 h-5" /> : idx === 1 ? <Star className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
-                {item}
-              </div>
-            ))}
           </nav>
 
-          <div className="p-8">
-            <div className="p-5 bg-black/40 rounded-3xl border border-white/5 flex items-center gap-4">
-              <div className="p-2 bg-indigo-500/10 rounded-xl">
-                 <Activity className="w-4 h-4 text-indigo-400/60" />
-              </div>
+          <div className="p-12 mt-auto">
+            <div className="p-8 bg-black/50 rounded-[3rem] border border-white/5 flex items-center gap-6">
+              <Activity className="w-6 h-6 text-indigo-500/40" />
               <div className="overflow-hidden">
-                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em] mb-0.5">Uptime</p>
-                <p className="text-[11px] text-zinc-400 font-mono truncate uppercase">{connectionStatus === 'online' ? '99.9% Stable' : 'Interrupted'}</p>
+                <p className="text-[12px] text-zinc-800 font-black tracking-widest uppercase">Sync Health</p>
+                <p className="text-[13px] text-zinc-600 font-mono uppercase font-black italic">{connectionStatus === 'online' ? '100% Solid' : 'Handshake Fail'}</p>
               </div>
             </div>
           </div>
         </aside>
 
-        {/* PANEL 2: MIDDLE */}
-        <section className="w-full md:w-[380px] lg:w-[420px] flex flex-col border-r border-white/5 bg-black/10">
-          <div className="p-10 pb-8 border-b border-white/5">
-            <div className="flex items-center justify-between mb-10">
-              <h2 className="text-3xl font-black text-white tracking-tighter italic">INBOX</h2>
-              <button 
-                onClick={() => fetchMessages(true)} 
-                className={`p-3 bg-zinc-900/50 border border-white/5 hover:border-indigo-500/40 rounded-2xl transition-all shadow-xl ${fetching ? 'text-indigo-400' : 'text-zinc-600 hover:text-white'}`}
-              >
-                <RefreshCw className={`w-5 h-5 ${fetching ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-
+        <section className="w-full md:w-[450px] lg:w-[500px] flex flex-col border-r border-white/5 bg-black/30">
+          <div className="p-14 pb-12 border-b border-white/5">
+            <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase mb-12">Incoming</h2>
             {connectionError && (
-              <div className="mb-6 p-5 bg-red-500/10 border border-red-500/20 rounded-3xl flex items-start gap-4 text-red-400 animate-in zoom-in duration-500 shadow-[0_15px_30px_rgba(239,68,68,0.15)]">
-                <AlertTriangle className="w-6 h-6 shrink-0 mt-0.5" />
-                <div className="text-[11px] leading-relaxed">
-                  <p className="font-black uppercase tracking-widest mb-1.5 leading-none">Security Alert</p>
-                  <p className="opacity-80 font-medium italic">Koneksi ditolak oleh browser. Periksa konfigurasi CORS pada Cloudflare Worker Anda.</p>
+              <div className="mb-10 p-8 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-start gap-6 text-red-500 animate-in zoom-in">
+                <AlertTriangle className="w-8 h-8 shrink-0 mt-1.5" />
+                <div className="text-[13px]">
+                  <p className="font-black uppercase tracking-[0.3em] mb-2">Firewall Active</p>
+                  <p className="opacity-70 font-bold italic">Browser menolak data. Pastikan Header CORS di Worker diatur ke "*"</p>
                 </div>
               </div>
             )}
-
-            <div className="relative group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700 group-focus-within:text-indigo-500 transition-all" />
-              <input 
-                type="text" 
-                placeholder="Scan encrypted packets..." 
-                className="w-full bg-black/60 border border-white/5 rounded-2xl py-4 pl-14 pr-5 text-xs focus:outline-none focus:border-indigo-500/40 focus:ring-4 focus:ring-indigo-500/5 transition-all placeholder:text-zinc-800 font-medium"
-              />
+            <div className="relative">
+              <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-800" />
+              <input type="text" placeholder="Scan identification..." className="w-full bg-black/60 border border-white/5 rounded-[2rem] py-5 pl-18 pr-8 text-xs focus:outline-none focus:border-indigo-500/60 font-black uppercase tracking-widest" />
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-5 space-y-3 custom-scrollbar bg-zinc-950/20">
+          <div className="flex-grow overflow-y-auto p-8 space-y-5 custom-scrollbar bg-zinc-950/40">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-30">
-                <div className="w-24 h-24 bg-zinc-900/30 rounded-full flex items-center justify-center mb-8 border border-dashed border-zinc-800 shadow-inner">
-                  <Mail className="w-10 h-10 text-zinc-700" />
-                </div>
-                <p className="text-[11px] font-black uppercase tracking-[0.4em] text-zinc-600 italic">Listening for Data</p>
+              <div className="h-full flex flex-col items-center justify-center p-20 text-center opacity-30 italic">
+                <Mail className="w-14 h-14 text-zinc-800 mb-8" />
+                <p className="text-[14px] font-black uppercase tracking-[0.6em] text-zinc-800 italic">Frequency Empty</p>
               </div>
             ) : (
               messages.map((msg) => (
-                <div 
-                  key={msg.id}
-                  onClick={() => setSelectedMessage(msg)}
-                  className={`relative p-6 rounded-[2rem] cursor-pointer transition-all duration-700 border group shadow-lg ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'hover:bg-white/5 border-transparent'}`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-4 max-w-[75%]">
-                      <div className={`w-2.5 h-2.5 rounded-full ${selectedMessage?.id === msg.id ? 'bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.6)]' : 'bg-zinc-800'}`}></div>
-                      <p className={`text-[13px] font-black truncate tracking-tight ${selectedMessage?.id === msg.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                        {msg.from.split('<')[0].trim()}
-                      </p>
+                <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`relative p-8 rounded-[3.2rem] cursor-pointer transition-all duration-700 border group ${selectedMessage?.id === msg.id ? 'bg-indigo-500/10 border-indigo-500/50' : 'hover:bg-white/5 border-transparent'}`}>
+                  <div className="flex justify-between items-start mb-6 uppercase">
+                    <div className="flex items-center gap-6">
+                      <div className={`w-3.5 h-3.5 rounded-full ${selectedMessage?.id === msg.id ? 'bg-indigo-400' : 'bg-zinc-900'}`}></div>
+                      <p className="text-[17px] font-black truncate">{msg.from.split('<')[0].trim()}</p>
                     </div>
-                    <span className="text-[9px] text-zinc-700 font-black bg-black/60 px-2.5 py-1.5 rounded-xl border border-white/5 uppercase tracking-tighter">
-                      {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
                   </div>
-                  <p className={`text-xs truncate font-semibold transition-colors duration-500 ${selectedMessage?.id === msg.id ? 'text-zinc-300' : 'text-zinc-600'}`}>
-                    {msg.subject || '(Protocol: Empty Subject)'}
-                  </p>
-                  <div className="mt-5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-1000 transform translate-y-2 group-hover:translate-y-0">
-                    <span className="text-[8px] font-black text-indigo-500/50 uppercase tracking-[0.2em] italic flex items-center gap-2">
-                      <Lock className="w-3 h-3" /> SECURE TUNNEL L4
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-800" />
-                  </div>
+                  <p className="text-base truncate font-bold text-zinc-900 group-hover:text-zinc-700 italic">{msg.subject || '(Unidentified)'}</p>
                 </div>
               ))
             )}
           </div>
         </section>
 
-        {/* PANEL 3: RIGHT */}
-        <main className="flex-grow flex flex-col bg-black/20 overflow-hidden relative">
+        <main className="flex-grow flex flex-col bg-black/40 overflow-hidden relative italic">
           {selectedMessage ? (
-            <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-8 duration-1000">
-              {/* Header Reader */}
-              <div className="p-10 md:p-12 border-b border-white/5 bg-zinc-950/40 flex items-center justify-between backdrop-blur-2xl">
-                <div className="flex items-center gap-8">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-indigo-600 blur-2xl opacity-30"></div>
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-900 rounded-[2.2rem] flex items-center justify-center font-black text-white text-4xl shadow-2xl border border-white/10 italic">
-                      {selectedMessage.from[0].toUpperCase()}
-                    </div>
+            <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-16">
+              <div className="p-16 md:p-20 border-b border-white/5 bg-zinc-950/80 flex items-center justify-between">
+                <div className="flex items-center gap-14">
+                  <div className="relative w-28 h-28 bg-gradient-to-br from-indigo-500 to-black rounded-[3.5rem] flex items-center justify-center font-black text-white text-6xl shadow-2xl">
+                    {selectedMessage.from[0].toUpperCase()}
                   </div>
-                  <div className="max-w-xl">
-                    <h3 className="text-3xl md:text-4xl font-black text-white leading-none mb-4 tracking-tighter uppercase italic">
-                      {selectedMessage.subject || '(No Subject)'}
-                    </h3>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[10px] text-zinc-700 font-black uppercase tracking-[0.3em] italic">Source:</span>
-                      <span className="text-[12px] text-indigo-400 font-bold font-mono px-4 py-1.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
-                        {selectedMessage.from}
-                      </span>
-                    </div>
+                  <div className="max-w-3xl">
+                    <h3 className="text-5xl md:text-6xl font-black text-white uppercase mb-8 tracking-tighter">{selectedMessage.subject || '(No Data)'}</h3>
+                    <p className="text-indigo-400 font-bold font-mono px-7 py-3 bg-indigo-500/5 rounded-[1.5rem] border border-indigo-500/10">{selectedMessage.from}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <button 
-                    onClick={() => setSelectedMessage(null)}
-                    className="p-6 bg-zinc-950/80 hover:bg-red-500/10 border border-white/5 hover:border-red-500/30 rounded-[2.8rem] text-zinc-600 hover:text-red-400 transition-all duration-700 shadow-3xl group"
-                  >
-                    <Trash2 className="w-7 h-7 transform group-hover:rotate-12 transition-transform" />
-                  </button>
-                </div>
+                <button onClick={() => setSelectedMessage(null)} className="p-10 bg-[#080808] hover:bg-red-500/5 border-2 border-white/5 rounded-[4rem] text-zinc-900 hover:text-red-500 transition-all">
+                  <Trash2 className="w-10 h-10" />
+                </button>
               </div>
 
-              {/* Message Body */}
-              <div className="flex-grow overflow-y-auto p-10 md:p-16 custom-scrollbar bg-black/60 shadow-inner">
-                <div className="max-w-3xl mx-auto">
-                  <div className="relative p-14 bg-[#0d0d0d] rounded-[4rem] border border-white/5 min-h-[450px] shadow-[inset_0_0_50px_rgba(0,0,0,0.5)]">
-                    <div className="absolute top-0 right-0 p-12 flex gap-4 opacity-5">
-                       <Shield className="w-8 h-8" />
-                    </div>
-                    <div className="text-zinc-300 leading-[2.1] text-xl whitespace-pre-wrap font-medium selection:bg-indigo-500/40 tracking-tight">
-                      {selectedMessage.body}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-20 flex flex-col items-center opacity-20">
-                    <div className="w-32 h-1 bg-zinc-900 rounded-full mb-12"></div>
-                    <div className="flex items-center gap-5 px-12 py-5 bg-black border border-white/5 rounded-full text-[11px] text-zinc-600 font-black uppercase tracking-[0.5em] italic">
-                       <div className="w-2.5 h-2.5 bg-indigo-700 rounded-full animate-pulse shadow-[0_0_15px_rgba(67,56,202,1)]"></div>
-                       PROTOCOL: SELF-DESTRUCT INITIATED
-                    </div>
-                  </div>
+              <div className="flex-grow overflow-y-auto p-16 md:p-24 bg-black/90">
+                <div className="max-w-5xl mx-auto p-20 bg-[#080808] rounded-[6rem] border-2 border-white/5 shadow-2xl min-h-[500px]">
+                  <p className="text-zinc-500 leading-relaxed text-2xl font-medium">{selectedMessage.body}</p>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center p-20 text-center animate-in fade-in duration-1000">
-              <div className="relative mb-14 group">
-                <div className="absolute inset-0 bg-indigo-500/10 blur-[120px] rounded-full group-hover:bg-indigo-500/20 transition duration-1500"></div>
-                <div className="relative w-48 h-48 bg-zinc-950 border border-white/10 rounded-[4.5rem] flex items-center justify-center shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden transform group-hover:scale-105 transition-transform duration-1000">
-                   <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/10 via-transparent to-transparent"></div>
-                   <Inbox className="w-20 h-20 text-zinc-900 transition-all duration-1000 group-hover:text-indigo-400 group-hover:drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
-                </div>
+            <div className="h-full flex flex-col items-center justify-center p-24 text-center">
+              <div className="w-80 h-80 bg-[#060606] border-2 border-white/5 rounded-[8rem] flex items-center justify-center mb-24 transform hover:scale-105 transition-all">
+                <Inbox className="w-32 h-32 text-zinc-950" />
               </div>
-              <h3 className="text-4xl font-black text-zinc-900 mb-6 tracking-[0.3em] uppercase leading-none italic opacity-80">
-                 {connectionStatus === 'offline' ? 'Bridge Offline' : 'Standby'}
-              </h3>
-              <p className="text-[12px] max-w-sm text-zinc-800 leading-relaxed font-black uppercase tracking-[0.5em] italic opacity-40">
-                {connectionStatus === 'offline' ? 'System handshake failed. Security firewall active.' : 'Awaiting incoming secure data packets.'}
-              </p>
-              
-              <div className="mt-24 flex gap-3 items-end opacity-5">
-                {[...Array(35)].map((_, i) => (
-                  <div key={i} className="h-10 w-2 bg-zinc-600 rounded-full animate-wave" style={{ height: `${Math.random() * 60 + 15}px`, animationDelay: `${i * 0.12}s` }}></div>
-                ))}
-              </div>
+              <h3 className="text-7xl font-black text-[#111] mb-10 tracking-[0.5em] uppercase italic">{connectionStatus === 'offline' ? 'Bridge Down' : 'Standby'}</h3>
             </div>
           )}
 
-          {/* Persistent Tech Footer */}
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-12 px-16 py-5 bg-black/80 backdrop-blur-xl rounded-[3rem] border border-white/5 shadow-[0_30px_70px_rgba(0,0,0,0.8)]">
-            <div className={`flex items-center gap-4 text-[11px] font-black uppercase tracking-[0.3em] ${connectionStatus === 'offline' ? 'text-red-600' : 'text-indigo-500'} shadow-indigo-500/20 italic`}>
-               <ShieldCheck className="w-5 h-5" />
-               {connectionStatus === 'offline' ? 'Secure Node Down' : 'Secure Bridge L4'}
-            </div>
-            <div className="w-px h-6 bg-zinc-800/60"></div>
-            <div className="flex items-center gap-4 text-[11px] font-black uppercase tracking-[0.3em] text-zinc-800 italic group cursor-default">
-               <Zap className="w-5 h-5 text-indigo-500/20 group-hover:text-indigo-500/80 transition-colors" />
-               RELAY: {MY_DOMAIN.toUpperCase()}
-            </div>
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-24 px-28 py-8 bg-black/95 backdrop-blur-3xl rounded-[5rem] border-2 border-white/10 shadow-2xl uppercase font-black text-[14px] tracking-[0.6em]">
+            <div className={`${connectionStatus === 'offline' ? 'text-red-900' : 'text-indigo-900'}`}>Secure Protocol</div>
+            <div className="w-px h-12 bg-zinc-950"></div>
+            <div className="text-zinc-900">Node: {MY_DOMAIN}</div>
           </div>
         </main>
       </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.015); border-radius: 20px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.04); }
-        
-        @keyframes pulse-slow {
-          0%, 100% { transform: scale(1); opacity: 0.05; }
-          50% { transform: scale(1.08); opacity: 0.1; }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 12s ease-in-out infinite;
-        }
-
-        @keyframes wave {
-          0%, 100% { transform: scaleY(1); opacity: 0.3; }
-          50% { transform: scaleY(2.2); opacity: 0.8; }
-        }
-        .animate-wave {
-          animation: wave 2.5s ease-in-out infinite;
-        }
-
-        body {
-          background-color: #030303 !important;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          margin: 0;
-          overflow: hidden;
-        }
+        body { background-color: #030303 !important; display: grid; place-items: center; min-height: 100vh; margin: 0; cursor: crosshair; }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.01); border-radius: 100px; }
+        @keyframes pulse-slow { 0%, 100% { opacity: 0.03; } 50% { opacity: 0.06; } }
+        .animate-pulse-slow { animation: pulse-slow 20s ease-in-out infinite; }
       `}</style>
     </div>
   );
