@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Mail, RefreshCw, Trash2, Eye, Copy, Check, Clock, ShieldCheck, Globe } from 'lucide-react';
 
 /**
@@ -9,13 +9,23 @@ import { Mail, RefreshCw, Trash2, Eye, Copy, Check, Clock, ShieldCheck, Globe } 
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "mail.rekenbutler.com"; 
 
+// Definisi struktur data pesan untuk TypeScript
+interface EmailMessage {
+  id: string;
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  date: string;
+}
+
 export default function App() {
-  const [email, setEmail] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [selectedMessage, setSelectedMessage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [messages, setMessages] = useState<EmailMessage[]>([]);
+  const [selectedMessage, setSelectedMessage] = useState<EmailMessage | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [fetching, setFetching] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
 
   // Fungsi untuk membuat alamat email acak baru
   const generateRandomEmail = () => {
@@ -41,7 +51,7 @@ export default function App() {
       const response = await fetch(`${WORKER_URL}/messages?email=${email}`);
       if (!response.ok) throw new Error("Gagal terhubung ke API");
       const data = await response.json();
-      setMessages(data);
+      setMessages(data as EmailMessage[]);
     } catch (err) {
       console.error("Error fetching messages:", err);
     } finally {
