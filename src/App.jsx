@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 
 /**
- * FRONTEND PRIVATE MAIL v4.8.5 ELITE (COLLECTIVE DEV BUILD)
+ * FRONTEND PRIVATE MAIL v4.8.6 ELITE (TOTAL CLEAN BUILD)
  * Fokus: Estetika Ramping, Tipografi Profesional, & Pembersihan Konten
- * Resolusi: Pembersihan total variabel tak terpakai (TS6133) untuk stabilitas Cloudflare Pages.
+ * Resolusi: Pembersihan variabel tak terpakai secara radikal untuk build Cloudflare Pages.
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "rekenbutler.com"; 
@@ -39,7 +39,6 @@ export default function App() {
 
   /**
    * PEMBERSIH KONTEN (Elite Sanitizer)
-   * Protokol untuk memastikan konten email bebas dari jejak MIME dan header teknis.
    */
   const formatBody = (rawBody: string) => {
     if (!rawBody) return "Pesan Kosong.";
@@ -118,7 +117,7 @@ export default function App() {
         setConnectionStatus('online');
       }
     } catch {
-        // Penanganan silent untuk mencegah variabel error tak terpakai
+        // Silent catch untuk menjaga stabilitas build
     } finally {
       if (manual) setFetching(false);
     }
@@ -197,7 +196,7 @@ export default function App() {
               </div>
 
               <nav className="space-y-2 text-left">
-                <div className="flex items-center justify-between px-3 py-3 bg-indigo-600/10 text-indigo-400 rounded-xl font-bold text-[11px] uppercase tracking-wide border border-indigo-600/20 shadow-sm shadow-indigo-600/5 text-left">
+                <div className="flex items-center justify-between px-3 py-3 bg-indigo-600/10 text-indigo-400 rounded-xl font-bold text-[11px] uppercase tracking-wide border border-indigo-600/20 shadow-sm shadow-indigo-600/5 text-left text-left">
                   <div className="flex items-center gap-3 text-left"><Inbox className="w-4 h-4 text-left" /> Masuk</div>
                   <span className="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded-md min-w-[1.5rem] text-center shadow-inner">{messages.length}</span>
                 </div>
@@ -207,7 +206,7 @@ export default function App() {
             <div className="mt-auto pt-6 border-t border-white/[0.04] text-left">
               <button onClick={() => setShowTerminal(!showTerminal)} className="w-full flex items-center gap-3 px-3 py-2 opacity-60 hover:opacity-100 transition-all text-left">
                 <Activity className="w-4 h-4 text-zinc-500 text-left" />
-                <div className="text-left overflow-hidden">
+                <div className="text-left overflow-hidden text-left">
                   <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter text-left">Integritas</p>
                   <p className="text-[11px] text-zinc-400 truncate italic leading-none text-left">Operasional 100%</p>
                 </div>
@@ -231,7 +230,7 @@ export default function App() {
           <div className="flex-grow overflow-y-auto custom-scrollbar text-left">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center p-10 text-center opacity-20 italic">
-                <Mail className="w-10 h-10 mb-5 text-zinc-600 text-center" />
+                <Mail className="w-10 h-10 mb-5 text-zinc-600 text-center mx-auto" />
                 <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed text-center">Menunggu paket data terenkripsi...</p>
               </div>
             ) : (
@@ -263,7 +262,7 @@ export default function App() {
           {showTerminal ? (
             <div className="flex flex-col h-full bg-[#09090b] p-8 animate-in fade-in duration-500 text-left">
                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800 text-left">
-                 <Terminal className="w-4 h-4 text-indigo-500" />
+                 <Terminal className="w-4 h-4 text-indigo-500 text-left" />
                  <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-widest text-left">Log Diagnostik</h3>
                </div>
                <div className="flex-grow space-y-4 overflow-y-auto custom-scrollbar font-mono text-[11px] text-zinc-500 text-left">
@@ -276,31 +275,32 @@ export default function App() {
             </div>
           ) : selectedMessage ? (
             <div className="flex flex-col h-full animate-in fade-in duration-300 text-left">
+              {/* Header */}
               <div className="p-6 border-b border-white/[0.04] flex items-center justify-between bg-[#141417]/60 backdrop-blur-md text-left">
                 <div className="flex items-center gap-5 overflow-hidden text-left">
-                  <button onClick={() => setSelectedMessage(null)} className="md:hidden p-2 hover:bg-zinc-800 rounded-lg mr-2"><ArrowLeft className="w-4 h-4 text-zinc-400" /></button>
-                  <div className="w-11 h-11 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-indigo-600/10 shrink-0">
+                  <button onClick={() => setSelectedMessage(null)} className="md:hidden p-2 hover:bg-zinc-800 rounded-lg mr-2"><ArrowLeft className="w-4 h-4 text-zinc-400 text-left" /></button>
+                  <div className="w-11 h-11 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-indigo-600/10 shrink-0 text-center">
                     {selectedMessage.sender[0].toUpperCase()}
                   </div>
                   <div className="min-w-0 text-left">
                     <h3 className="text-[15px] font-bold text-zinc-100 truncate mb-1 uppercase tracking-tight italic text-left">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
                     <div className="flex items-center gap-2 text-left">
-                      <User className="w-3 h-3 text-zinc-600" />
+                      <User className="w-3 h-3 text-zinc-600 text-left" />
                       <p className="text-[11px] text-zinc-500 truncate font-mono text-left">{selectedMessage.sender}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4 shrink-0">
-                  <button onClick={() => setSelectedMessage(null)} className="p-2.5 text-zinc-600 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all border border-transparent hover:border-red-400/20">
+                <div className="flex items-center gap-2 ml-4 shrink-0 text-left">
+                  <button onClick={() => setSelectedMessage(null)} className="p-2.5 text-zinc-600 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all border border-transparent hover:border-red-400/20 text-center">
                     <Trash2 className="w-4.5 h-4.5" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex-grow overflow-y-auto p-8 md:p-12 custom-scrollbar bg-[#0d0d0f] text-left">
-                <div className="max-w-2xl mx-auto text-left">
-                   <div className="flex items-center gap-3 mb-8 opacity-40 text-left">
-                      <Clock className="w-3.5 h-3.5" />
+              <div className="flex-grow overflow-y-auto p-8 md:p-12 custom-scrollbar bg-[#0d0d0f] text-left text-left">
+                <div className="max-w-2xl mx-auto text-left text-left">
+                   <div className="flex items-center gap-3 mb-8 opacity-40 text-left text-left text-left">
+                      <Clock className="w-3.5 h-3.5 text-left" />
                       <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-left">Paket diterima pada {new Date(selectedMessage.date).toLocaleString()}</span>
                    </div>
                    <div className="text-zinc-300 leading-[1.8] text-[15px] whitespace-pre-wrap font-medium tracking-normal italic text-left bg-zinc-900/20 p-8 rounded-3xl border border-white/[0.02]">
@@ -320,25 +320,25 @@ export default function App() {
             <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500">
               <div className="relative mb-8 text-center mx-auto">
                 <div className="absolute inset-0 bg-indigo-600/10 blur-[60px] rounded-full"></div>
-                <div className="relative w-24 h-24 bg-zinc-900/80 rounded-[2.5rem] flex items-center justify-center border border-white/[0.04] shadow-2xl mx-auto">
-                   <Mail className="w-10 h-10 text-zinc-700" />
+                <div className="relative w-24 h-24 bg-zinc-900/80 rounded-[2.5rem] flex items-center justify-center border border-white/[0.04] shadow-2xl mx-auto text-center">
+                   <Mail className="w-10 h-10 text-zinc-700 text-center mx-auto" />
                 </div>
               </div>
-              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.4em] mb-4 text-center leading-none">Node Standby</h3>
-              <p className="text-[12px] max-w-[280px] leading-relaxed text-zinc-600 font-medium italic opacity-60 mx-auto text-center leading-[2]">
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.4em] mb-4 text-center leading-none text-center">Node Standby</h3>
+              <p className="text-[12px] max-w-[280px] leading-relaxed text-zinc-600 font-medium italic opacity-60 mx-auto text-center leading-[2] text-center">
                 Menunggu transmisi paket data terenkripsi masuk melalui protokol secured.
               </p>
             </div>
           )}
 
           {/* SYSTEM HUD FOOTER */}
-          <div className="px-6 py-3.5 bg-[#141417] border-t border-white/[0.04] flex items-center justify-between gap-4 text-left">
+          <div className="px-6 py-3.5 bg-[#141417] border-t border-white/[0.04] flex items-center justify-between gap-4 text-left text-left">
              <div className="flex items-center gap-3 text-left">
-                <div className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500'} text-left`}></div>
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic text-left">Node: {MY_DOMAIN}</span>
              </div>
-             <div className="flex items-center gap-3 opacity-40 text-left">
-                <Shield className="w-3.5 h-3.5 text-indigo-400" />
+             <div className="flex items-center gap-3 opacity-40 text-left text-left">
+                <Shield className="w-3.5 h-3.5 text-indigo-400 text-left" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-left">RSA-4096 Secure Connection</span>
              </div>
           </div>
