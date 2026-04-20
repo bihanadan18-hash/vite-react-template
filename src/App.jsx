@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 
 /**
- * FRONTEND PRIVATE MAIL v4.8.4 ELITE (BUILD STABLE)
+ * FRONTEND PRIVATE MAIL v4.8.5 ELITE (COLLECTIVE DEV BUILD)
  * Fokus: Estetika Ramping, Tipografi Profesional, & Pembersihan Konten
- * Perbaikan: Penghapusan total variabel tak terpakai untuk kelulusan build TS Cloudflare
+ * Resolusi: Pembersihan total variabel tak terpakai (TS6133) untuk stabilitas Cloudflare Pages.
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "rekenbutler.com"; 
@@ -39,7 +39,7 @@ export default function App() {
 
   /**
    * PEMBERSIH KONTEN (Elite Sanitizer)
-   * Menghilangkan jejak MIME, HTML Tags, dan Header Teknis
+   * Protokol untuk memastikan konten email bebas dari jejak MIME dan header teknis.
    */
   const formatBody = (rawBody: string) => {
     if (!rawBody) return "Pesan Kosong.";
@@ -69,7 +69,7 @@ export default function App() {
       if (response.ok) {
         setConnectionStatus('online');
       }
-    } catch (err: unknown) {
+    } catch {
       setConnectionStatus('offline');
     }
   }, []);
@@ -117,8 +117,8 @@ export default function App() {
         setMessages(data);
         setConnectionStatus('online');
       }
-    } catch (err: unknown) {
-        // Error handling silent untuk auto-sync agar tidak mengganggu UI
+    } catch {
+        // Penanganan silent untuk mencegah variabel error tak terpakai
     } finally {
       if (manual) setFetching(false);
     }
@@ -150,13 +150,13 @@ export default function App() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Gagal menyalin alamat");
+      console.error("Gagal menyalin alamat:", err);
     }
     document.body.removeChild(textArea);
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0c] text-zinc-400 font-sans grid place-items-center p-4 sm:p-6 md:p-8 overflow-hidden selection:bg-indigo-500/30">
+    <div className="min-h-screen w-full bg-[#0a0a0c] text-zinc-400 font-sans grid place-items-center p-4 sm:p-6 md:p-8 overflow-hidden">
       
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none opacity-20">
@@ -164,10 +164,10 @@ export default function App() {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full"></div>
       </div>
 
-      {/* Main App Shell - Slimmer & Balanced */}
+      {/* Main App Shell */}
       <div className="relative w-full h-[88vh] max-w-5xl flex flex-col md:flex-row bg-[#111114] border border-white/[0.04] rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden transition-all duration-500">
         
-        {/* NAVIGATION BAR: Minimalist Side */}
+        {/* SIDEBAR */}
         <aside className="w-full md:w-60 flex flex-col border-b md:border-b-0 md:border-r border-white/[0.04] bg-[#111114] shrink-0 text-left">
           <div className="p-6 flex flex-col h-full text-left">
             <div className="flex items-center gap-3 mb-10 text-left">
@@ -216,7 +216,7 @@ export default function App() {
           </div>
         </aside>
 
-        {/* TRANSMISSION LIST: Central Stream */}
+        {/* TRANSMISSION LIST */}
         <section className={`w-full md:w-80 flex flex-col border-r border-white/[0.04] bg-[#141417] text-left ${selectedMessage ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-5 border-b border-white/[0.04] flex items-center justify-between bg-[#141417]">
             <h2 className="text-[11px] font-bold text-zinc-100 uppercase tracking-[0.2em] italic text-left leading-none">Transmisi Masuk</h2>
@@ -258,7 +258,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* DATA DECODER: Main Viewer */}
+        {/* DATA DECODER */}
         <main className="flex-grow flex flex-col bg-[#111114] relative text-left">
           {showTerminal ? (
             <div className="flex flex-col h-full bg-[#09090b] p-8 animate-in fade-in duration-500 text-left">
@@ -276,7 +276,6 @@ export default function App() {
             </div>
           ) : selectedMessage ? (
             <div className="flex flex-col h-full animate-in fade-in duration-300 text-left">
-              {/* Header */}
               <div className="p-6 border-b border-white/[0.04] flex items-center justify-between bg-[#141417]/60 backdrop-blur-md text-left">
                 <div className="flex items-center gap-5 overflow-hidden text-left">
                   <button onClick={() => setSelectedMessage(null)} className="md:hidden p-2 hover:bg-zinc-800 rounded-lg mr-2"><ArrowLeft className="w-4 h-4 text-zinc-400" /></button>
@@ -291,14 +290,13 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4 shrink-0 text-left">
+                <div className="flex items-center gap-2 ml-4 shrink-0">
                   <button onClick={() => setSelectedMessage(null)} className="p-2.5 text-zinc-600 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all border border-transparent hover:border-red-400/20">
                     <Trash2 className="w-4.5 h-4.5" />
                   </button>
                 </div>
               </div>
 
-              {/* Content */}
               <div className="flex-grow overflow-y-auto p-8 md:p-12 custom-scrollbar bg-[#0d0d0f] text-left">
                 <div className="max-w-2xl mx-auto text-left">
                    <div className="flex items-center gap-3 mb-8 opacity-40 text-left">
@@ -319,7 +317,7 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500 text-center">
+            <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500">
               <div className="relative mb-8 text-center mx-auto">
                 <div className="absolute inset-0 bg-indigo-600/10 blur-[60px] rounded-full"></div>
                 <div className="relative w-24 h-24 bg-zinc-900/80 rounded-[2.5rem] flex items-center justify-center border border-white/[0.04] shadow-2xl mx-auto">
@@ -333,7 +331,7 @@ export default function App() {
             </div>
           )}
 
-          {/* SYSTEM HUD FOOTER: Slim Line */}
+          {/* SYSTEM HUD FOOTER */}
           <div className="px-6 py-3.5 bg-[#141417] border-t border-white/[0.04] flex items-center justify-between gap-4 text-left">
              <div className="flex items-center gap-3 text-left">
                 <div className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500'}`}></div>
