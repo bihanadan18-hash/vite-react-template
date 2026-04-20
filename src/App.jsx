@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 
 /**
- * FRONTEND PRIVATE MAIL v4.8.3 ELITE
+ * FRONTEND PRIVATE MAIL v4.8.4 ELITE (BUILD STABLE)
  * Fokus: Estetika Ramping, Tipografi Profesional, & Pembersihan Konten
- * Perbaikan: Pembersihan total variabel tak terpakai untuk stabilitas build TS
+ * Perbaikan: Penghapusan total variabel tak terpakai untuk kelulusan build TS Cloudflare
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "rekenbutler.com"; 
@@ -118,7 +118,7 @@ export default function App() {
         setConnectionStatus('online');
       }
     } catch (err: unknown) {
-        // Silent catch to prevent build errors while maintaining status
+        // Error handling silent untuk auto-sync agar tidak mengganggu UI
     } finally {
       if (manual) setFetching(false);
     }
@@ -156,7 +156,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0c] text-zinc-400 font-sans grid place-items-center p-4 sm:p-6 md:p-8 overflow-hidden">
+    <div className="min-h-screen w-full bg-[#0a0a0c] text-zinc-400 font-sans grid place-items-center p-4 sm:p-6 md:p-8 overflow-hidden selection:bg-indigo-500/30">
       
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none opacity-20">
@@ -169,7 +169,7 @@ export default function App() {
         
         {/* NAVIGATION BAR: Minimalist Side */}
         <aside className="w-full md:w-60 flex flex-col border-b md:border-b-0 md:border-r border-white/[0.04] bg-[#111114] shrink-0 text-left">
-          <div className="p-6 flex flex-col h-full text-left text-left">
+          <div className="p-6 flex flex-col h-full text-left">
             <div className="flex items-center gap-3 mb-10 text-left">
               <div className="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-600/20 text-left">
                 <ShieldCheck className="w-5 h-5 text-white" />
@@ -285,13 +285,13 @@ export default function App() {
                   </div>
                   <div className="min-w-0 text-left">
                     <h3 className="text-[15px] font-bold text-zinc-100 truncate mb-1 uppercase tracking-tight italic text-left">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
-                    <div className="flex items-center gap-2 text-left text-left">
+                    <div className="flex items-center gap-2 text-left">
                       <User className="w-3 h-3 text-zinc-600" />
                       <p className="text-[11px] text-zinc-500 truncate font-mono text-left">{selectedMessage.sender}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4 shrink-0">
+                <div className="flex items-center gap-2 ml-4 shrink-0 text-left">
                   <button onClick={() => setSelectedMessage(null)} className="p-2.5 text-zinc-600 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all border border-transparent hover:border-red-400/20">
                     <Trash2 className="w-4.5 h-4.5" />
                   </button>
@@ -309,7 +309,7 @@ export default function App() {
                       {formatBody(selectedMessage.body)}
                    </div>
                    <div className="mt-16 flex flex-col items-center opacity-10 text-center mx-auto">
-                      <div className="w-32 h-[1px] bg-zinc-700 mb-8"></div>
+                      <div className="w-32 h-[1px] bg-zinc-700 mb-8 text-center mx-auto"></div>
                       <div className="flex items-center justify-center gap-3 px-5 py-2.5 bg-black rounded-full border border-white/5 text-[10px] font-bold uppercase tracking-[0.4em]">
                          <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
                          Secure Terminal Pro
@@ -319,10 +319,10 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500">
+            <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500 text-center">
               <div className="relative mb-8 text-center mx-auto">
                 <div className="absolute inset-0 bg-indigo-600/10 blur-[60px] rounded-full"></div>
-                <div className="relative w-24 h-24 bg-zinc-900/80 rounded-[2.5rem] flex items-center justify-center border border-white/[0.04] shadow-2xl mx-auto text-center">
+                <div className="relative w-24 h-24 bg-zinc-900/80 rounded-[2.5rem] flex items-center justify-center border border-white/[0.04] shadow-2xl mx-auto">
                    <Mail className="w-10 h-10 text-zinc-700" />
                 </div>
               </div>
