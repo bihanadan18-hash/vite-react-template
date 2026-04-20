@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 
 /**
- * FRONTEND PRIVATE MAIL v4.8.1 ELITE
+ * FRONTEND PRIVATE MAIL v4.8.2 ELITE
  * Fokus: Estetika Ramping, Tipografi Profesional, & Pembersihan Konten
- * Perbaikan: Menghapus variabel tak terpakai untuk stabilitas build TS
+ * Perbaikan: Pembersihan total variabel tak terpakai untuk stabilitas build TS
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "rekenbutler.com"; 
@@ -118,7 +118,7 @@ export default function App() {
         setConnectionStatus('online');
       }
     } catch (err: unknown) {
-        // Silent error for auto-sync, connection status remains offline if truly down
+        // Silent error for auto-sync
     } finally {
       if (manual) setFetching(false);
     }
