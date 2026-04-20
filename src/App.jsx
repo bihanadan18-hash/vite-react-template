@@ -5,13 +5,13 @@ import {
   Activity,
   Copy, Check, Terminal, 
   ArrowLeft,
-  Clock, User, Shield
+  Clock, User
 } from 'lucide-react';
 
 /**
- * FRONTEND PRIVATE MAIL v4.9 ELITE (ULTIMATE STABLE BUILD)
+ * FRONTEND PRIVATE MAIL v4.9.1 ELITE (ULTIMATE STABLE BUILD)
  * Fokus: Estetika Ramping, Tipografi Profesional, & Pembersihan Konten
- * Resolusi Final: Penghapusan total seluruh variabel tak terpakai untuk sukses build Cloudflare.
+ * Resolusi: Penghapusan total variabel tak terpakai (TS6133) untuk sukses build Cloudflare.
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "rekenbutler.com"; 
@@ -39,7 +39,6 @@ export default function App() {
 
   /**
    * PEMBERSIH KONTEN (Elite Sanitizer)
-   * Protokol untuk memastikan konten email bebas dari jejak MIME dan header teknis.
    */
   const formatBody = (rawBody: string) => {
     if (!rawBody) return "Pesan Kosong.";
@@ -59,7 +58,7 @@ export default function App() {
     clean = clean.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
     clean = clean.trim();
 
-    return clean || "Pesan terenkripsi atau hanya berisi elemen grafis.";
+    return clean || "Pesan terenkripsi atau hanya berisi teks teknis.";
   };
 
   const checkApiHealth = useCallback(async () => {
@@ -120,7 +119,7 @@ export default function App() {
         setConnectionStatus('online');
       }
     } catch {
-        // Silent catch untuk build TS
+        // Silent catch agar build TS sukses
     } finally {
       if (manual) setFetching(false);
     }
@@ -166,10 +165,10 @@ export default function App() {
         <div className="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] bg-blue-500/10 blur-[120px] rounded-full"></div>
       </div>
 
-      {/* Main Container - Slimmer & Centered */}
-      <div className="relative w-full h-full sm:h-[85vh] max-w-6xl flex flex-col md:flex-row bg-[#111114] border border-zinc-800/50 rounded-none sm:rounded-2xl shadow-2xl overflow-hidden transition-all">
+      {/* Main Container - Slim & Ramping */}
+      <div className="relative w-full h-full sm:h-[85vh] max-w-6xl flex flex-col md:flex-row bg-[#111114] border border-zinc-800/50 rounded-none sm:rounded-2xl shadow-2xl overflow-hidden">
         
-        {/* SIDEBAR: NAVIGATION */}
+        {/* SIDEBAR */}
         <aside className="w-full md:w-64 flex flex-col border-b md:border-b-0 md:border-r border-zinc-800/50 bg-[#121214] shrink-0 text-left">
           <div className="p-6 flex flex-col h-full text-left">
             <div className="flex items-center gap-3 mb-8 text-left">
@@ -197,7 +196,7 @@ export default function App() {
               </div>
 
               <nav className="space-y-1 text-left">
-                <div className="flex items-center justify-between px-3 py-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all text-left">
+                <div className="flex items-center justify-between px-3 py-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg font-bold text-[11px] uppercase tracking-wider text-left">
                   <div className="flex items-center gap-3 text-left"><Inbox className="w-4 h-4 text-left" /> Masuk</div>
                   <span className="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded-md text-center">{messages.length}</span>
                 </div>
@@ -216,7 +215,7 @@ export default function App() {
           </div>
         </aside>
 
-        {/* PANEL 2: INBOX LIST */}
+        {/* INBOX LIST */}
         <section className={`w-full md:w-[320px] flex flex-col border-r border-zinc-800/50 bg-[#161618] text-left ${selectedMessage ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-5 border-b border-zinc-800/50 flex items-center justify-between">
             <h2 className="text-xs font-bold text-zinc-200 uppercase tracking-widest text-left leading-none">Transmisi</h2>
@@ -230,7 +229,7 @@ export default function App() {
 
           <div className="flex-grow overflow-y-auto custom-scrollbar text-left">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center p-8 opacity-30 text-center">
+              <div className="h-full flex flex-col items-center justify-center p-8 opacity-30 text-center mx-auto">
                 <Mail className="w-8 h-8 mb-4 text-zinc-600 text-center mx-auto" />
                 <p className="text-[10px] font-bold uppercase tracking-widest text-center leading-none">Menunggu Sinyal...</p>
               </div>
@@ -258,10 +257,10 @@ export default function App() {
           </div>
         </section>
 
-        {/* PANEL 3: MESSAGE READER */}
+        {/* READER */}
         <main className="flex-grow flex flex-col bg-[#121214] relative text-left">
           {showTerminal ? (
-            <div className="flex flex-col h-full bg-[#09090b] p-8 animate-in fade-in duration-500 text-left text-left">
+            <div className="flex flex-col h-full bg-[#09090b] p-8 animate-in fade-in duration-500 text-left">
                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800 text-left">
                  <Terminal className="w-4 h-4 text-indigo-500 text-left" />
                  <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-widest text-left leading-none">Log Diagnostik</h3>
@@ -269,14 +268,13 @@ export default function App() {
                <div className="flex-grow space-y-4 overflow-y-auto custom-scrollbar font-mono text-[11px] text-zinc-500 text-left">
                  <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800 text-left">
                    <p className="text-indigo-400 font-bold mb-2 uppercase tracking-widest text-left">[OK] INFRASTRUKTUR</p>
-                   <p className="italic text-left leading-relaxed">Protokol v4.9 Aktif. Variabel tak terpakai telah dibersihkan secara radikal.</p>
+                   <p className="italic text-left leading-relaxed">Protokol v4.9.1 Aktif. Pipa data bersih dari variabel tak terpakai.</p>
                  </div>
                </div>
                <button onClick={() => setShowTerminal(false)} className="mt-4 px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-bold uppercase text-[10px] tracking-widest transition-all">Tutup Log</button>
             </div>
           ) : selectedMessage ? (
             <div className="flex flex-col h-full animate-in fade-in duration-300 text-left">
-              {/* Header */}
               <div className="p-6 border-b border-zinc-800/50 flex items-center justify-between bg-[#161618]/50 text-left">
                 <div className="flex items-center gap-4 overflow-hidden text-left">
                   <button onClick={() => setSelectedMessage(null)} className="md:hidden p-2 hover:bg-zinc-800 rounded-lg mr-2 text-left"><ArrowLeft className="w-4 h-4 text-zinc-400 text-left" /></button>
@@ -284,7 +282,7 @@ export default function App() {
                     {selectedMessage.sender[0].toUpperCase()}
                   </div>
                   <div className="min-w-0 text-left">
-                    <h3 className="text-sm font-bold text-zinc-100 truncate text-left">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
+                    <h3 className="text-sm font-bold text-zinc-100 truncate text-left italic">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
                     <div className="flex items-center gap-2 mt-0.5 text-left text-left">
                       <User className="w-3 h-3 text-zinc-600 text-left" />
                       <p className="text-[11px] text-zinc-500 truncate font-mono text-left">{selectedMessage.sender}</p>
@@ -296,9 +294,8 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Content */}
               <div className="flex-grow overflow-y-auto p-6 md:p-10 custom-scrollbar bg-[#121214] text-left">
-                <div className="max-w-3xl mx-auto text-left text-left">
+                <div className="max-w-3xl mx-auto text-left">
                    <div className="flex items-center gap-2 mb-6 opacity-40 text-left">
                       <Clock className="w-3 h-3 text-left" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-left">Diterima pada {new Date(selectedMessage.date).toLocaleString()}</span>
@@ -306,10 +303,10 @@ export default function App() {
                    <div className="text-zinc-300 leading-[1.8] text-[14px] whitespace-pre-wrap font-normal text-left bg-zinc-900/10 p-6 rounded-2xl border border-white/[0.02]">
                       {formatBody(selectedMessage.body)}
                    </div>
-                   <div className="mt-12 pt-8 border-t border-zinc-800/30 flex justify-center opacity-20 text-center mx-auto">
-                      <div className="flex items-center gap-3 px-4 py-2 bg-zinc-900 rounded-full text-[10px] font-bold uppercase tracking-widest text-center">
-                         <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                         Secure Node Terminal v4.9
+                   <div className="mt-12 pt-8 border-t border-zinc-800/30 flex justify-center opacity-20 text-center mx-auto text-center">
+                      <div className="flex items-center gap-3 px-4 py-2 bg-zinc-900 rounded-full text-[10px] font-bold uppercase tracking-widest text-center mx-auto">
+                         <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse text-center"></div>
+                         Secure Terminal Pro v4.9.1
                       </div>
                    </div>
                 </div>
@@ -320,8 +317,8 @@ export default function App() {
               <div className="w-20 h-20 bg-zinc-900/50 rounded-3xl flex items-center justify-center mb-6 border border-zinc-800/50 text-center mx-auto">
                  <Mail className="w-8 h-8 text-zinc-700 text-center mx-auto" />
               </div>
-              <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-[0.3em] mb-3 text-center">Sistem Siaga</h3>
-              <p className="text-[11px] max-w-[240px] leading-relaxed text-zinc-600 italic text-center mx-auto leading-none">
+              <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-[0.3em] mb-3 text-center leading-none">Node Standby</h3>
+              <p className="text-[11px] max-w-[240px] leading-relaxed text-zinc-600 italic text-center mx-auto">
                 Menunggu transmisi paket data terenkripsi masuk melalui jalur secured.
               </p>
             </div>
@@ -331,11 +328,11 @@ export default function App() {
           <div className="p-4 bg-[#161618] border-t border-zinc-800/50 flex flex-wrap items-center justify-between gap-4 text-left">
              <div className="flex items-center gap-2 text-left">
                 <div className={`w-1.5 h-1.5 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500'} text-left`}></div>
-                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest text-left">Node: {MY_DOMAIN}</span>
+                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest text-left leading-none">Node: {MY_DOMAIN}</span>
              </div>
              <div className="flex items-center gap-3 opacity-30 text-left">
-                <Shield className="w-3.5 h-3.5 text-zinc-500 text-left" />
-                <span className="text-[9px] font-bold uppercase tracking-widest text-left leading-none">RSA-4096 Secure Connection</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-zinc-500 text-left" />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-left leading-none">RSA-4096 Secure</span>
              </div>
           </div>
         </main>
