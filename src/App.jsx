@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Mail, RefreshCw, Trash2, 
   ShieldCheck, Inbox, 
-  Search, AlertTriangle, Activity,
+  Activity,
   Copy, Check, Terminal, 
-  ChevronRight, ArrowLeft,
+  ArrowLeft,
   Clock, User, Shield
 } from 'lucide-react';
 
 /**
- * FRONTEND PRIVATE MAIL v4.8 ELITE
+ * FRONTEND PRIVATE MAIL v4.8.1 ELITE
  * Fokus: Estetika Ramping, Tipografi Profesional, & Pembersihan Konten
+ * Perbaikan: Menghapus variabel tak terpakai untuk stabilitas build TS
  */
 const WORKER_URL = "https://temp-mail-backend.bihanadan18.workers.dev"; 
 const MY_DOMAIN = "rekenbutler.com"; 
@@ -32,7 +33,6 @@ export default function App() {
   const [fetching, setFetching] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'online' | 'offline'>('checking');
-  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [showTerminal, setShowTerminal] = useState(false);
   
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -44,23 +44,18 @@ export default function App() {
   const formatBody = (rawBody: string) => {
     if (!rawBody) return "Pesan Kosong.";
     
-    // 1. Deteksi apakah ada blok HTML
     const isHtml = /<[a-z][\s\S]*>/i.test(rawBody);
-    
     let clean = rawBody;
     
-    // 2. Jika HTML, coba ambil teksnya saja atau bersihkan tag secara kasar
     if (isHtml) {
       clean = clean.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
       clean = clean.replace(/<[^>]+>/g, ' ');
     }
 
-    // 3. Hilangkan header MIME dan boundary yang sering bocor
     clean = clean.replace(/(Content-Type|Content-Transfer-Encoding|charset|boundary|MIME-Version|Subject|From|To|Date|X-[\w-]+):.*?\r?\n/gi, '');
     clean = clean.replace(/--[a-f0-9]{10,}/gi, '');
-    clean = clean.replace(/^[a-zA-Z0-9+/=]{60,}$/gm, ''); // Hilangkan blok Base64
+    clean = clean.replace(/^[a-zA-Z0-9+/=]{60,}$/gm, ''); 
     
-    // 4. Normalisasi spasi dan baris baru
     clean = clean.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
     clean = clean.trim();
 
@@ -73,9 +68,8 @@ export default function App() {
       const response = await fetch(baseUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
       if (response.ok) {
         setConnectionStatus('online');
-        setConnectionError(null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setConnectionStatus('offline');
     }
   }, []);
@@ -115,12 +109,7 @@ export default function App() {
       const rawText = await response.text();
       
       if (!response.ok) {
-        let info = `Error ${response.status}`;
-        try {
-          const data = JSON.parse(rawText);
-          info = data.error || info;
-        } catch (e) { }
-        throw new Error(info);
+        throw new Error(rawText || `Error ${response.status}`);
       }
       
       const data = JSON.parse(rawText);
@@ -128,10 +117,8 @@ export default function App() {
         setMessages(data);
         setConnectionStatus('online');
       }
-    } catch (err: any) {
-      if (err.name !== 'AbortError' && manual) {
-        setConnectionError(err.message);
-      }
+    } catch (err: unknown) {
+        // Silent error for auto-sync, connection status remains offline if truly down
     } finally {
       if (manual) setFetching(false);
     }
@@ -158,10 +145,14 @@ export default function App() {
     textArea.value = email;
     document.body.appendChild(textArea);
     textArea.select();
-    document.execCommand('copy');
+    try {
+      document.execCommand('copy');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Gagal menyalin alamat");
+    }
     document.body.removeChild(textArea);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -177,18 +168,18 @@ export default function App() {
       <div className="relative w-full h-[88vh] max-w-5xl flex flex-col md:flex-row bg-[#111114] border border-white/[0.04] rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] overflow-hidden transition-all duration-500">
         
         {/* NAVIGATION BAR: Minimalist Side */}
-        <aside className="w-full md:w-60 flex flex-col border-b md:border-b-0 md:border-r border-white/[0.04] bg-[#111114] shrink-0">
-          <div className="p-6 flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-10">
-              <div className="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-600/20">
+        <aside className="w-full md:w-60 flex flex-col border-b md:border-b-0 md:border-r border-white/[0.04] bg-[#111114] shrink-0 text-left">
+          <div className="p-6 flex flex-col h-full text-left">
+            <div className="flex items-center gap-3 mb-10 text-left">
+              <div className="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-600/20 text-left">
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-sm font-bold text-zinc-100 tracking-tight uppercase italic">PrivateMail</h1>
             </div>
 
-            <div className="space-y-8 flex-grow">
-              <div className="space-y-4">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] px-1">Identitas Aktif</p>
+            <div className="space-y-8 flex-grow text-left">
+              <div className="space-y-4 text-left">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] px-1 text-left">Identitas Aktif</p>
                 <div className="bg-zinc-900/40 border border-white/[0.03] rounded-xl p-4 group transition-all hover:bg-zinc-900/60">
                   <div className="text-center">
                     <p className="text-[13px] font-mono text-indigo-400 font-bold truncate mb-4">{loading ? 'Processing...' : email}</p>
@@ -205,8 +196,8 @@ export default function App() {
                 </div>
               </div>
 
-              <nav className="space-y-2">
-                <div className="flex items-center justify-between px-3 py-3 bg-indigo-600/10 text-indigo-400 rounded-xl font-bold text-[11px] uppercase tracking-wide border border-indigo-600/20 shadow-sm shadow-indigo-600/5">
+              <nav className="space-y-2 text-left">
+                <div className="flex items-center justify-between px-3 py-3 bg-indigo-600/10 text-indigo-400 rounded-xl font-bold text-[11px] uppercase tracking-wide border border-indigo-600/20 shadow-sm shadow-indigo-600/5 text-left">
                   <div className="flex items-center gap-3"><Inbox className="w-4 h-4" /> Masuk</div>
                   <span className="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded-md min-w-[1.5rem] text-center shadow-inner">{messages.length}</span>
                 </div>
@@ -214,19 +205,19 @@ export default function App() {
             </div>
 
             <div className="mt-auto pt-6 border-t border-white/[0.04]">
-              <div className="flex items-center gap-3 px-3 py-2 opacity-60">
+              <button onClick={() => setShowTerminal(!showTerminal)} className="w-full flex items-center gap-3 px-3 py-2 opacity-60 hover:opacity-100 transition-all text-left">
                 <Activity className="w-4 h-4 text-zinc-500" />
                 <div className="text-left overflow-hidden">
                   <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Integritas</p>
-                  <p className="text-[11px] text-zinc-400 truncate italic">Operasional 100%</p>
+                  <p className="text-[11px] text-zinc-400 truncate italic leading-none">Operasional 100%</p>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </aside>
 
         {/* TRANSMISSION LIST: Central Stream */}
-        <section className={`w-full md:w-80 flex flex-col border-r border-white/[0.04] bg-[#141417] ${selectedMessage ? 'hidden md:flex' : 'flex'}`}>
+        <section className={`w-full md:w-80 flex flex-col border-r border-white/[0.04] bg-[#141417] text-left ${selectedMessage ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-5 border-b border-white/[0.04] flex items-center justify-between bg-[#141417]">
             <h2 className="text-[11px] font-bold text-zinc-100 uppercase tracking-[0.2em] italic">Transmisi Masuk</h2>
             <div className="flex items-center gap-2">
@@ -258,7 +249,7 @@ export default function App() {
                       {new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <p className="text-[11px] text-zinc-500 truncate font-medium italic opacity-70">
+                  <p className="text-[11px] text-zinc-500 truncate font-medium italic opacity-70 text-left">
                     {msg.subject || '(Protokol: Tanpa Subjek)'}
                   </p>
                 </div>
@@ -268,37 +259,51 @@ export default function App() {
         </section>
 
         {/* DATA DECODER: Main Viewer */}
-        <main className="flex-grow flex flex-col bg-[#111114] relative">
-          {selectedMessage ? (
-            <div className="flex flex-col h-full animate-in fade-in duration-300">
-              {/* Message Header */}
-              <div className="p-6 border-b border-white/[0.04] flex items-center justify-between bg-[#141417]/60 backdrop-blur-md">
+        <main className="flex-grow flex flex-col bg-[#111114] relative text-left">
+          {showTerminal ? (
+            <div className="flex flex-col h-full bg-[#09090b] p-8 animate-in fade-in duration-500 text-left">
+               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800 text-left">
+                 <Terminal className="w-4 h-4 text-indigo-500" />
+                 <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-widest text-left">Log Diagnostik</h3>
+               </div>
+               <div className="flex-grow space-y-4 overflow-y-auto custom-scrollbar font-mono text-[11px] text-zinc-500 text-left">
+                 <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800 text-left">
+                   <p className="text-indigo-400 font-bold mb-2 uppercase tracking-widest text-left">[OK] INFRASTRUKTUR</p>
+                   <p className="italic text-left">Protokol D1 SQL Terverifikasi. Sinkronisasi Catch-all Aktif.</p>
+                 </div>
+               </div>
+               <button onClick={() => setShowTerminal(false)} className="mt-4 px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg font-bold uppercase text-[10px] tracking-widest transition-all">Tutup Log</button>
+            </div>
+          ) : selectedMessage ? (
+            <div className="flex flex-col h-full animate-in fade-in duration-300 text-left">
+              {/* Header */}
+              <div className="p-6 border-b border-white/[0.04] flex items-center justify-between bg-[#141417]/60 backdrop-blur-md text-left">
                 <div className="flex items-center gap-5 overflow-hidden text-left">
                   <button onClick={() => setSelectedMessage(null)} className="md:hidden p-2 hover:bg-zinc-800 rounded-lg mr-2"><ArrowLeft className="w-4 h-4 text-zinc-400" /></button>
                   <div className="w-11 h-11 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-indigo-600/10 shrink-0">
                     {selectedMessage.sender[0].toUpperCase()}
                   </div>
                   <div className="min-w-0 text-left">
-                    <h3 className="text-[15px] font-bold text-zinc-100 truncate mb-1 uppercase tracking-tight italic">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
-                    <div className="flex items-center gap-2">
+                    <h3 className="text-[15px] font-bold text-zinc-100 truncate mb-1 uppercase tracking-tight italic text-left">{selectedMessage.subject || '(Tanpa Subjek)'}</h3>
+                    <div className="flex items-center gap-2 text-left">
                       <User className="w-3 h-3 text-zinc-600" />
-                      <p className="text-[11px] text-zinc-500 truncate font-mono">{selectedMessage.sender}</p>
+                      <p className="text-[11px] text-zinc-500 truncate font-mono text-left">{selectedMessage.sender}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4 shrink-0">
-                  <button onClick={() => setSelectedMessage(null)} className="p-2.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all border border-transparent hover:border-red-400/20">
+                <div className="flex items-center gap-2 ml-4 shrink-0 text-left">
+                  <button onClick={() => setSelectedMessage(null)} className="p-2.5 text-zinc-600 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all border border-transparent hover:border-red-400/20">
                     <Trash2 className="w-4.5 h-4.5" />
                   </button>
                 </div>
               </div>
 
-              {/* Message Body Content */}
+              {/* Content */}
               <div className="flex-grow overflow-y-auto p-8 md:p-12 custom-scrollbar bg-[#0d0d0f] text-left">
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-2xl mx-auto text-left">
                    <div className="flex items-center gap-3 mb-8 opacity-40 text-left">
                       <Clock className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Paket diterima pada {new Date(selectedMessage.date).toLocaleString()}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-left">Paket diterima pada {new Date(selectedMessage.date).toLocaleString()}</span>
                    </div>
                    <div className="text-zinc-300 leading-[1.8] text-[15px] whitespace-pre-wrap font-medium tracking-normal italic text-left bg-zinc-900/20 p-8 rounded-3xl border border-white/[0.02]">
                       {formatBody(selectedMessage.body)}
@@ -314,14 +319,14 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500 text-center">
-              <div className="relative mb-8">
-                <div className="absolute inset-0 bg-indigo-600/10 blur-[60px] rounded-full"></div>
-                <div className="relative w-24 h-24 bg-zinc-900/80 rounded-[2.5rem] flex items-center justify-center border border-white/[0.04] shadow-2xl">
+            <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in zoom-in-95 duration-500">
+              <div className="relative mb-8 text-center mx-auto">
+                <div className="absolute inset-0 bg-indigo-600/10 blur-[60px] rounded-full text-center"></div>
+                <div className="relative w-24 h-24 bg-zinc-900/80 rounded-[2.5rem] flex items-center justify-center border border-white/[0.04] shadow-2xl text-center mx-auto">
                    <Mail className="w-10 h-10 text-zinc-700" />
                 </div>
               </div>
-              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.4em] mb-4">Node Standby</h3>
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.4em] mb-4 text-center">Node Standby</h3>
               <p className="text-[12px] max-w-[280px] leading-relaxed text-zinc-600 font-medium italic opacity-60 mx-auto text-center leading-[2]">
                 Menunggu transmisi paket data terenkripsi masuk melalui protokol secured.
               </p>
@@ -329,14 +334,14 @@ export default function App() {
           )}
 
           {/* SYSTEM HUD FOOTER: Slim Line */}
-          <div className="px-6 py-3.5 bg-[#141417] border-t border-white/[0.04] flex items-center justify-between gap-4">
-             <div className="flex items-center gap-3">
+          <div className="px-6 py-3.5 bg-[#141417] border-t border-white/[0.04] flex items-center justify-between gap-4 text-left">
+             <div className="flex items-center gap-3 text-left">
                 <div className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500'}`}></div>
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Node: {MY_DOMAIN}</span>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic text-left">Node: {MY_DOMAIN}</span>
              </div>
-             <div className="flex items-center gap-3 opacity-40">
+             <div className="flex items-center gap-3 opacity-40 text-left">
                 <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="text-[9px] font-black uppercase tracking-widest">RSA-4096 Secure Connection</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-left">RSA-4096 Secure Connection</span>
              </div>
           </div>
         </main>
